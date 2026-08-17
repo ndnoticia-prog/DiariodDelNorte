@@ -1,0 +1,37 @@
+{
+    "name": "diariodelnorte/dnorte-core",
+    "description": "Núcleo de la plataforma editorial de Diario del Norte (plugin de WordPress).",
+    "type": "wordpress-plugin",
+    "license": "GPL-2.0-or-later",
+    "require": {
+        "php": ">=8.1"
+    },
+    "require-dev": {
+        "diariodelnorte/dnorte-theme": "*",
+        "phpunit/phpunit": "^10.5",
+        "mockery/mockery": "^1.6",
+        "brain/monkey": "^2.6"
+    },
+    "repositories": [
+        { "type": "path", "url": "../dnorte-theme" }
+    ],
+    "autoload": {
+        "psr-4": {
+            "DNorteCore\\": "src/"
+        }
+    },
+    "autoload-dev": {
+        "psr-4": {
+            "DNorteCore\\Tests\\": "tests/"
+        }
+    },
+    "config": {
+        "allow-plugins": {
+            "dealerdirect/phpcodesniffer-composer-installer": true,
+            "phpstan/extension-installer": true
+        }
+    },
+    "scripts": {
+        "test": "phpunit --colors=always"
+    }
+}

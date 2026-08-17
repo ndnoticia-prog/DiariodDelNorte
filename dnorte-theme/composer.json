@@ -1,0 +1,37 @@
+{
+    "name": "diariodelnorte/dnorte-theme",
+    "description": "Tema de presentación de Diario del Norte (sin lógica de negocio).",
+    "type": "wordpress-theme",
+    "license": "GPL-2.0-or-later",
+    "require": {
+        "php": ">=8.1"
+    },
+    "require-dev": {
+        "diariodelnorte/dnorte-core": "*",
+        "phpunit/phpunit": "^10.5",
+        "mockery/mockery": "^1.6",
+        "brain/monkey": "^2.6"
+    },
+    "repositories": [
+        { "type": "path", "url": "../dnorte-core" }
+    ],
+    "autoload": {
+        "psr-4": {
+            "DNorteTheme\\": "src/"
+        }
+    },
+    "autoload-dev": {
+        "psr-4": {
+            "DNorteTheme\\Tests\\": "tests/"
+        }
+    },
+    "config": {
+        "allow-plugins": {
+            "dealerdirect/phpcodesniffer-composer-installer": true,
+            "phpstan/extension-installer": true
+        }
+    },
+    "scripts": {
+        "test": "phpunit --colors=always"
+    }
+}
