@@ -21,12 +21,19 @@ verifica además contra un WordPress real en el navegador antes de cerrarse.
       assets con Vite/Sass.
 - [ ] Suite de pruebas unitarias PHPUnit (Brain Monkey) para `Container`, `Config`,
       `HookManager`, `EventDispatcher`.
-- [ ] `dnorte-core-0.1.0-alpha.1.zip`/`dnorte-theme-0.1.0-alpha.1.zip` instalables en un
-      WordPress real sin errores fatales, `debug.log` vacío.
-- [ ] Verificación con el toolchain instalado: `composer install && composer run check`
-      en verde; `npm install && npm run build` genera `dist/app.css`/`dist/app.js`.
-- [ ] Activación verificada en un WordPress real (no solo revisión de código) — plugin y
-      tema activos, front-end cargando, modo oscuro funcionando.
+- [ ] `phpcs.xml`/`phpstan.neon` propios (aún no existen) para que `composer run check`
+      funcione de punta a punta — hoy solo se verificó `composer install`/`npm run build`.
+- [ ] Script de empaquetado (`tools/build/package.sh` o equivalente) que genere
+      `dnorte-core-0.1.0-alpha.1.zip`/`dnorte-theme-0.1.0-alpha.1.zip` instalables.
+- [x] Verificación con el toolchain instalado: `composer install` y
+      `npm install && npm run build` en verde, generan `dist/app.css`/`dist/app.js`.
+- [x] Activación verificada en un WordPress real vía WP-CLI (no solo revisión de código,
+      no un zip todavía — symlinks de desarrollo): plugin y tema activos, front-end
+      cargando (assets de Vite servidos), modo oscuro funcionando sin parpadeo, dashboard
+      y pantallas de administración (Plugins, Temas, Menús) sin errores, `debug.log`
+      vacío. Encontrado y corregido en el proceso: `ThemeServiceProvider` enganchaba
+      `registerMenus()` a un hook inexistente (`register_nav_menus` no es una action de
+      WordPress) — ver "Fixed" en `CHANGELOG.md`.
 
 ## Próximas versiones (por decidir)
 

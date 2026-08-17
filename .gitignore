@@ -12,6 +12,7 @@
 !/storage/logs/.gitkeep
 /tools/wp-tests/wordpress-develop/
 /tools/wp-tests/wordpress-site/
+/tools/wp-dev/
 wp-tests-config.php
 *.log
 .env

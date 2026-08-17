@@ -19,9 +19,13 @@ final class ThemeServiceProvider extends ServiceProvider
     {
         $hooks = $this->container->get(HookManager::class);
 
+        // register_nav_menus() es una función que hay que LLAMAR en after_setup_theme,
+        // no un hook al que engancharse (no existe tal action en WordPress core) — bug
+        // real encontrado y corregido en la primera verificación en navegador de este
+        // scaffold: sin esto, wp-admin/nav-menus.php reporta "tu tema no soporta menús".
         $hooks->addAction('after_setup_theme', $this->registerThemeSupports(...), 10);
+        $hooks->addAction('after_setup_theme', $this->registerMenus(...), 10);
         $hooks->addAction('wp_enqueue_scripts', $this->enqueueAssets(...), 10);
-        $hooks->addAction('register_nav_menus', $this->registerMenus(...), 10);
     }
 
     public function registerThemeSupports(): void
