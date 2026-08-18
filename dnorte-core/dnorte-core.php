@@ -28,25 +28,35 @@ define( 'DNORTE_CORE_DIR', __DIR__ );
 // si no, registra un autoloader PSR-4 mínimo propio para DNorteCore\ → src/, para que
 // el plugin funcione recién clonado sin depender de que composer install se haya
 // ejecutado todavía.
-if ( is_readable( __DIR__ . '/vendor/autoload.php' ) ) {
-	require_once __DIR__ . '/vendor/autoload.php';
-} else {
-	spl_autoload_register(
-		static function ( string $class ): void {
-			$prefix = 'DNorteCore\\';
+//
+// El class_exists() exterior evita volver a declarar las clases del plugin si ya las
+// cargó otro autoloader en el mismo proceso PHP — el caso real es el arnés de pruebas
+// de integración (tools/wp-tests/phpunit9/), que mapea este mismo namespace
+// directamente a src/ por ruta para no cargar el PHPUnit 10 del vendor/ de este
+// paquete dentro de un proceso que ya corre bajo PHPUnit 9 (ver
+// tools/wp-tests/README.md). Sin este guard, requerir vendor/autoload.php ahí
+// declararía las clases de PHPUnit 10 dos veces y produciría un fatal error.
+if ( ! class_exists( 'DNorteCore\\Application' ) ) {
+	if ( is_readable( __DIR__ . '/vendor/autoload.php' ) ) {
+		require_once __DIR__ . '/vendor/autoload.php';
+	} else {
+		spl_autoload_register(
+			static function ( string $class ): void {
+				$prefix = 'DNorteCore\\';
 
-			if ( ! str_starts_with( $class, $prefix ) ) {
-				return;
+				if ( ! str_starts_with( $class, $prefix ) ) {
+					return;
+				}
+
+				$relative = substr( $class, strlen( $prefix ) );
+				$path     = __DIR__ . '/src/' . str_replace( '\\', '/', $relative ) . '.php';
+
+				if ( is_readable( $path ) ) {
+					require $path;
+				}
 			}
-
-			$relative = substr( $class, strlen( $prefix ) );
-			$path     = __DIR__ . '/src/' . str_replace( '\\', '/', $relative ) . '.php';
-
-			if ( is_readable( $path ) ) {
-				require $path;
-			}
-		}
-	);
+		);
+	}
 }
 
 /**

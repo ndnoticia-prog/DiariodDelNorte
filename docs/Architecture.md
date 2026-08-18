@@ -82,11 +82,52 @@ mocks**: `DatabaseManager` y `Migrator` son `final` (como toda la plataforma) y
 dependen de `wpdb`, una clase real de WordPress no cargada en el proceso de pruebas
 unitarias — ni PHPUnit ni Mockery pueden generar un doble de una clase `final`, y
 `wpdb` tampoco existe fuera de un WordPress real para poder sustituirlo por un doble
-propio. ND Platform documentó exactamente esta misma limitación desde su alpha.1 y la
-resolvió con una suite de pruebas de integración aparte, contra un WordPress/MySQL
-reales (ver `handoff-nd-platform.md` §6) — infraestructura que este proyecto todavía no
-tiene montada. Mientras tanto, esta capa se verifica manualmente contra el WordPress de
-desarrollo real (ver `CHANGELOG.md`).
+propio. ND Platform documentó exactamente esta misma limitación desde su alpha.1.
+Resuelto en `v0.1.0-alpha.2`: infraestructura de pruebas de integración con
+WordPress/MySQL reales (ver "Infraestructura de pruebas de integración" más abajo).
+
+## Infraestructura de pruebas de integración con WordPress real
+
+`dnorte-core` tiene dos suites de PHPUnit: unitarias (Brain Monkey, `composer test`) e
+integración (WordPress/MySQL reales, `composer test:integration`), siguiendo el mismo
+enfoque que ND Platform documentó (ver `handoff-nd-platform.md` §6): `git
+sparse-checkout` de `WordPress/wordpress-develop` para el arnés de pruebas oficial (sin
+Docker/`wp-env`, no disponible en este entorno), y MariaDB local. Ver
+`tools/wp-tests/README.md` para el paso a paso completo.
+
+**PHPUnit 9 aislado**: el arnés de pruebas de `wordpress-develop`
+(`WP_UnitTestCase::expectDeprecated()`) todavía llama a
+`PHPUnit\Util\Test::parseTestMethodAnnotations()`, eliminado en PHPUnit 10/11 (las
+que usan las pruebas unitarias). En vez de fijar todo el paquete a PHPUnit 9, las
+pruebas de integración corren en un proceso completamente aislado
+(`tools/wp-tests/phpunit9/`, un "meta-proyecto" Composer propio) cuyo autoloader mapea
+`DNorteCore\` directamente a `dnorte-core/src/` por ruta — deliberadamente sin cargar
+el `vendor/autoload.php` propio de `dnorte-core`, que arrastraría PHPUnit 10 al mismo
+proceso y produciría un choque de clases.
+
+**El guard `class_exists()` en `dnorte-core.php`**: como el autoloader del proceso de
+integración ya mapea `DNorteCore\` por ruta, `dnorte-core.php` (cargado como mu-plugin
+vía `tests_add_filter('muplugins_loaded', ...)`, exactamente igual que en producción)
+comprueba `class_exists('DNorteCore\Application')` antes de requerir su propio
+`vendor/autoload.php` — si la clase ya es resoluble (porque el autoloader del proceso
+de integración ya la mapea), no vuelve a cargar el `vendor/autoload.php` del paquete, y
+así nunca coexisten dos copias de PHPUnit en el mismo proceso. Mismo patrón exacto que
+`nd-core.php` en ND Platform.
+
+**Migraciones y estado compartido entre invocaciones**: `CoreServiceProvider::maybeRunUpgrade()`
+(enganchado a `init`) ejecuta `Installer::install()` automáticamente en cada arranque —
+exactamente igual que en un sitio real. La tabla `dnorte_migrations` ya existe para
+cuando cualquier clase de prueba arranca; un test que la recree o la vacíe por completo
+rompe esa invariante para el resto de la suite, porque persiste en la base de datos
+compartida entre invocaciones separadas del proceso de PHPUnit. Por eso `MigratorTest`
+limpia solo su propia fila de fixture en `tearDown()`, nunca la tabla completa.
+
+**DDL y aislamiento transaccional**: `CREATE`/`DROP TABLE` producen un `COMMIT`
+implícito en MySQL/MariaDB, rompiendo el aislamiento transaccional por-test de
+`WP_UnitTestCase` para el resto de esa prueba. `DatabaseManagerTest` crea y elimina su
+tabla de fixtures en `wpSetUpBeforeClass()`/`wpTearDownAfterClass()` (una sola vez para
+toda la clase, fuera de cualquier transacción por-test), no dentro de un test
+individual.
 
 ## REST API
 

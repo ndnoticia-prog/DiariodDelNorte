@@ -88,13 +88,40 @@ verifica además contra un WordPress real en el navegador antes de cerrarse.
       solo `?rest_route=`), dashboard/Plugins sin errores, `debug.log` vacío en todo
       el recorrido.
 
+## v0.1.0-alpha.3 — Infraestructura de pruebas de integración
+
+- [x] `git sparse-checkout` de `WordPress/wordpress-develop` (`src` + `tests/phpunit`)
+      en `tools/wp-tests/wordpress-develop/`, y base de datos MariaDB local
+      (`dnorte_platform_test`) separada de la de ND Platform — mismo enfoque
+      documentado en `handoff-nd-platform.md` §6, sin Docker/`wp-env`.
+- [x] `tools/wp-tests/phpunit9/`: meta-proyecto Composer aislado con PHPUnit 9 +
+      `yoast/phpunit-polyfills`, autoloader propio (`DNorteCore\` → `dnorte-core/src/`
+      por ruta) — necesario porque el arnés de pruebas de `wordpress-develop`
+      (`WP_UnitTestCase::expectDeprecated()`) todavía llama a un método interno de
+      PHPUnit eliminado en PHPUnit 10/11 (las que usan las pruebas unitarias).
+- [x] `dnorte-core.php`: guard `class_exists('DNorteCore\Application')` antes de
+      requerir `vendor/autoload.php` — evita que dos copias de PHPUnit (9 del arnés de
+      integración, 10 del propio paquete) coexistan en el mismo proceso. Mismo patrón
+      que `nd-core.php` en ND Platform.
+- [x] 14 pruebas de integración reales: `DatabaseManagerTest` (CRUD completo contra una
+      tabla de fixtures propia), `MigratorTest` (aplicar/no reaplicar una migración,
+      limpieza cuidadosa de la tabla compartida `dnorte_migrations`), `InstallerTest`
+      (incluye confirmar que la instalación real ya corrió sola durante el bootstrap),
+      y `SystemStatusControllerTest` (endpoint REST real de punta a punta vía
+      `rest_get_server()->dispatch()`, cerrando el hueco que la suite unitaria dejó
+      documentado para `handle()`).
+- [x] `composer run check` (32 pruebas unitarias) y `composer test:integration` (14
+      pruebas) en verde, ambos estables en corridas repetidas (sin estado corrupto
+      entre invocaciones del proceso).
+- [x] `.zip` regenerado (por el guard nuevo en `dnorte-core.php`) e instalado sobre el
+      WordPress real de desarrollo: front-end, `wp-json/dnorte/v1/system/status` y
+      Plugins sin errores, `debug.log` vacío.
+
 ## Próximas versiones (por decidir)
 
 Alcance a definir según necesidad real de Diario del Norte, no por paridad con ND
 Platform (ver `docs/handoff-nd-platform.md` §8). Candidatos, en orden probable de
-prioridad: infraestructura de pruebas de integración con WordPress/MySQL reales (cierra
-el hueco de `DatabaseManager`/`Migrator`/`Installer` de alpha.2), SEO técnico
-(Schema.org, OpenGraph, sitemap), multimedia (WebP/AVIF, imagen destacada), y solo
-después evaluar publicidad propia, analítica propia, IA, búsqueda interna y workflow
-editorial — cada uno preguntando primero si un plugin ya probado o una función nativa
-de WordPress lo resuelve sin construir nada nuevo.
+prioridad: SEO técnico (Schema.org, OpenGraph, sitemap), multimedia (WebP/AVIF, imagen
+destacada), y solo después evaluar publicidad propia, analítica propia, IA, búsqueda
+interna y workflow editorial — cada uno preguntando primero si un plugin ya probado o
+una función nativa de WordPress lo resuelve sin construir nada nuevo.

@@ -2,6 +2,44 @@
 
 Formato basado en [Keep a Changelog](https://keepachangelog.com/es-ES/1.0.0/).
 
+## [Unreleased] — v0.1.0-alpha.3
+
+### Added
+
+- Infraestructura de pruebas de integración con WordPress/MySQL reales:
+  `tools/wp-tests/wordpress-develop/` (`git sparse-checkout` de `src` + `tests/phpunit`)
+  y base de datos MariaDB local `dnorte_platform_test`.
+- `tools/wp-tests/phpunit9/`: meta-proyecto Composer aislado (PHPUnit 9 +
+  `yoast/phpunit-polyfills`) con autoloader propio (`DNorteCore\` → `dnorte-core/src/`
+  por ruta) — el arnés de `wordpress-develop` todavía llama a un método interno
+  eliminado en PHPUnit 10/11 (las que usan las pruebas unitarias).
+- `dnorte-core`: `phpunit-integration.xml.dist`, `tests/Integration/bootstrap.php`
+  (carga `dnorte-core.php` como mu-plugin vía `tests_add_filter('muplugins_loaded', ...)`,
+  igual que en producción) y 14 pruebas de integración reales — `DatabaseManagerTest`,
+  `MigratorTest`, `InstallerTest`, `SystemStatusControllerTest` (endpoint REST real de
+  punta a punta, cierra el hueco documentado en la suite unitaria).
+- `composer test:integration` (script nuevo en `dnorte-core/composer.json`).
+- `tools/wp-tests/README.md`.
+
+### Fixed
+
+- `dnorte-core.php`: el autoload no comprobaba si las clases del plugin ya estaban
+  cargadas por otro autoloader del mismo proceso — al requerir siempre su propio
+  `vendor/autoload.php`, coexistían dos copias de PHPUnit (9 del arnés de integración,
+  10 del propio paquete) en el mismo proceso, produciendo un fatal error. Corregido con
+  un guard `class_exists('DNorteCore\Application')`, mismo patrón que `nd-core.php` en
+  ND Platform.
+
+### Verified
+
+- `composer run check` (32 pruebas unitarias, 0 PHPCS, 0 PHPStan) y
+  `composer test:integration` (14 pruebas contra WordPress/MySQL reales) en verde,
+  ambos estables en corridas repetidas.
+- `.zip` de `dnorte-core` regenerado e instalado sobre el WordPress real de desarrollo:
+  front-end, `wp-json/dnorte/v1/system/status` y Plugins sin errores, `debug.log`
+  vacío.
+
+
 ## [Unreleased] — v0.1.0-alpha.2
 
 ### Added

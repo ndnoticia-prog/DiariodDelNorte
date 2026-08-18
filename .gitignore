@@ -12,8 +12,10 @@
 !/storage/logs/.gitkeep
 /tools/wp-tests/wordpress-develop/
 /tools/wp-tests/wordpress-site/
+/tools/wp-tests/phpunit9/vendor/
 /tools/wp-dev/
 wp-tests-config.php
+.phpunit.cache.integration/
 *.log
 .env
 .env.local
