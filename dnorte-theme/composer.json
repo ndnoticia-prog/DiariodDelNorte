@@ -51,7 +51,8 @@
             "@lint",
             "@stan",
             "@test"
-        ]
+        ],
+        "test:integration": "../tools/wp-tests/phpunit9/vendor/bin/phpunit --colors=always -c phpunit-integration.xml.dist"
     },
     "minimum-stability": "dev",
     "prefer-stable": true

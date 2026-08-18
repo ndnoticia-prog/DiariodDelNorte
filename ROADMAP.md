@@ -216,12 +216,54 @@ seguía siendo el placeholder mínimo del scaffold inicial.
       y menú móvil funcionando (confirmado el toggle disparando el evento `click`
       real del botón — no solo revisión visual), `debug.log` vacío.
 
+## v0.1.0-alpha.7 — Identidad visual (fase 2: portada, artículo y archivo)
+
+- [x] `dnorte-theme`: `Content\HomeContentProvider` — una sola `WP_Query` repartida en
+      hero (más reciente), última hora (siguientes 3) y más noticias (siguientes 6).
+- [x] `dnorte-theme`: `front-page.php` con bloques reales — `template-parts/blocks/hero.php`,
+      `breaking.php`, `latest-grid.php` — y `template-parts/post-card.php` reutilizable
+      (portada y archivo comparten la misma tarjeta).
+- [x] `dnorte-theme`: `single.php` — tipografía editorial (columna de 72ch), kicker de
+      categoría, imagen destacada, byline con autor/fecha, y **migas de pan visibles**
+      (`template-parts/breadcrumbs.php`, usa `Seo\Breadcrumbs\BreadcrumbBuilder` de
+      dnorte-core — el mismo origen de datos que ya alimenta el `BreadcrumbList` de
+      Schema.org desde alpha.4, para que el HTML visible y el JSON-LD nunca puedan
+      divergir).
+- [x] `dnorte-theme`: `archive.php` — cabecera con el nombre del término (no
+      `get_the_archive_title()`, mismo criterio ya aplicado en `BreadcrumbBuilder`) +
+      cuadrícula de tarjetas + paginación.
+- [x] `dnorte-theme`: `comments.php` — sin esta plantilla WordPress emite un aviso de
+      deprecación en cada artículo con comentarios abiertos; encontrado en la primera
+      verificación real en navegador, mismo tipo de hallazgo que ND Platform ya
+      documentó.
+- [x] Infraestructura de pruebas de integración para `dnorte-theme`, reutilizando el
+      mismo PHPUnit 9 aislado y compartido de `tools/wp-tests/phpunit9/` (mapeo de
+      `DNorteTheme\` añadido junto al de `DNorteCore\`, mismo patrón que el
+      meta-proyecto compartido de ND Platform). 4 pruebas de integración reales para
+      `HomeContentProvider`.
+- [x] Bug real encontrado en la verificación, no en revisión de código:
+      `tools/build/package.sh` copiaba una lista fija de archivos del tema
+      (`style.css`/`functions.php`/`header.php`/`footer.php`/`index.php`) — al añadir
+      `front-page.php`, `single.php`, `archive.php` y `template-parts/`, el `.zip`
+      generado seguía sin incluirlos y la portada real caía al `index.php` de
+      fallback sin que ningún test lo detectara. Corregido copiando todos los `.php`
+      de la raíz del tema automáticamente (con `phpstan-bootstrap.php` excluido
+      explícitamente, por ser solo de desarrollo) en vez de mantener la lista a mano.
+- [x] `composer run check` (3 unitarias) y `composer test:integration` (4 pruebas) en
+      verde en `dnorte-theme`; `dnorte-core` reverificado sin cambios (63 unitarias +
+      23 de integración).
+- [x] Verificado en el WordPress real de desarrollo con contenido real (9 artículos,
+      3 categorías, imágenes destacadas, autor asignado): portada con hero/última
+      hora/cuadrícula, artículo individual con breadcrumbs y modo oscuro, archivo de
+      categoría con título limpio — `debug.log` vacío en todo el recorrido, incluido
+      el aviso de `comments.php` que ya no aparece.
+
 ## Próximas versiones (por decidir)
 
-Fase estética (continuación): bloques de portada (hero, destacados, últimas noticias)
-con contenido real vía `HomeContentProvider` + `WP_Query`; plantilla de artículo con
-tipografía editorial y breadcrumbs visibles (el schema ya existe desde alpha.4, falta
-mostrarlo en el HTML); plantilla de archivo/categoría. Alcance técnico restante, no por
-paridad con ND Platform (ver `docs/handoff-nd-platform.md` §8): sitemap de Google
-News/Discover, y solo después evaluar publicidad propia, analítica propia, IA, búsqueda
-interna y workflow editorial.
+Alcance técnico restante, no por paridad con ND Platform (ver
+`docs/handoff-nd-platform.md` §8): sitemap de Google News/Discover, y solo después
+evaluar publicidad propia, analítica propia, IA, búsqueda interna y workflow
+editorial — cada uno preguntando primero si un plugin ya probado o una función nativa
+de WordPress lo resuelve sin construir nada nuevo. En lo estético: guía de marca real
+de Diario del Norte (sustituir el color de acento placeholder), y posible logo/isotipo
+en vez de branding solo textual.

@@ -1,6 +1,6 @@
 {
     "name": "diariodelnorte/dnorte-platform-wp-tests-phpunit9",
-    "description": "Entorno aislado de PHPUnit 9 para la suite de integración de dnorte-core: el arnés de pruebas de wordpress-develop (WP_UnitTestCase::expectDeprecated()) todavía llama a PHPUnit\\Util\\Test::parseTestMethodAnnotations(), eliminado en PHPUnit 10/11 (las mismas usadas por las pruebas unitarias de Brain Monkey). También actúa como único autoloader del proceso (mapeando el namespace de dnorte-core directamente a su src/ por ruta) para evitar que el propio vendor/autoload.php de dnorte-core (con PHPUnit 10 en su classmap de require-dev) choque con este PHPUnit 9 en el mismo proceso. Ver tools/wp-tests/README.md. Mismo patrón que ND Platform.",
+    "description": "Entorno aislado de PHPUnit 9 compartido por las suites de integración de dnorte-core y dnorte-theme: el arnés de pruebas de wordpress-develop (WP_UnitTestCase::expectDeprecated()) todavía llama a PHPUnit\\Util\\Test::parseTestMethodAnnotations(), eliminado en PHPUnit 10/11 (las mismas usadas por las pruebas unitarias de Brain Monkey). También actúa como único autoloader del proceso (mapeando el namespace de cada paquete directamente a su src/ por ruta) para evitar que el propio vendor/autoload.php de cada paquete (con PHPUnit 10 en su classmap de require-dev) choque con este PHPUnit 9 en el mismo proceso. Ver tools/wp-tests/README.md. Mismo patrón que ND Platform.",
     "type": "project",
     "license": "GPL-2.0-or-later",
     "private": true,
@@ -17,7 +17,8 @@
     },
     "autoload": {
         "psr-4": {
-            "DNorteCore\\": "../../../dnorte-core/src/"
+            "DNorteCore\\": "../../../dnorte-core/src/",
+            "DNorteTheme\\": "../../../dnorte-theme/src/"
         }
     }
 }

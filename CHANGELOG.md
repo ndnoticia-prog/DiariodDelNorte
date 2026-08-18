@@ -2,6 +2,49 @@
 
 Formato basado en [Keep a Changelog](https://keepachangelog.com/es-ES/1.0.0/).
 
+## [Unreleased] — v0.1.0-alpha.7
+
+### Added
+
+- `dnorte-theme`: `Content\HomeContentProvider` (una `WP_Query`, repartida en hero /
+  última hora / más noticias).
+- `dnorte-theme`: `front-page.php` con bloques reales (`hero.php`, `breaking.php`,
+  `latest-grid.php`) y `template-parts/post-card.php` reutilizable.
+- `dnorte-theme`: `single.php` — tipografía editorial, kicker, imagen destacada,
+  byline, migas de pan visibles (`template-parts/breadcrumbs.php`, mismo origen de
+  datos que el `BreadcrumbList` de Schema.org).
+- `dnorte-theme`: `archive.php` — cabecera con el nombre del término + cuadrícula +
+  paginación.
+- `dnorte-theme`: `comments.php`.
+- Infraestructura de pruebas de integración para `dnorte-theme`, compartiendo el
+  PHPUnit 9 aislado de `tools/wp-tests/phpunit9/` con `dnorte-core`. 4 pruebas nuevas
+  para `HomeContentProvider`.
+
+### Fixed
+
+- `tools/build/package.sh`: `package_dnorte_theme()` copiaba una lista fija de
+  archivos que nunca se actualizó al añadir plantillas nuevas — el `.zip` generado no
+  incluía `front-page.php`/`single.php`/`archive.php`/`template-parts/`, y la portada
+  real caía silenciosamente al `index.php` de fallback. Encontrado en la verificación
+  visual, no por ningún test. Corregido copiando todos los `.php` de la raíz del tema
+  automáticamente.
+- `dnorte-theme`: faltaba `comments.php`, WordPress emitía un aviso de deprecación en
+  cada artículo con comentarios abiertos. Mismo tipo de hallazgo ya documentado en el
+  handoff de ND Platform.
+- `dnorte-theme`: `archive.php` usaba `get_the_archive_title()` para el `<h1>` visible
+  — WordPress core antepone "Category: "/"Tag: " (correcto para el `<title>` SEO, no
+  para un encabezado visible). Mismo criterio ya aplicado en `BreadcrumbBuilder`
+  (alpha.4).
+
+### Verified
+
+- `composer run check` (3 pruebas) y `composer test:integration` (4 pruebas) en verde
+  en `dnorte-theme`; `dnorte-core` reverificado sin cambios (63 + 23).
+- WordPress real de desarrollo con contenido real (9 artículos, 3 categorías,
+  imágenes destacadas, autor asignado): portada con hero/última hora/cuadrícula,
+  artículo con breadcrumbs en claro y oscuro, archivo de categoría con título limpio,
+  `debug.log` vacío (incluido el aviso de `comments.php`, que ya no aparece).
+
 ## [Unreleased] — v0.1.0-alpha.6
 
 ### Added

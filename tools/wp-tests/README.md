@@ -1,6 +1,6 @@
 # Entorno de pruebas de integración con WordPress real
 
-`dnorte-core` tiene dos suites de PHPUnit distintas:
+`dnorte-core` y `dnorte-theme` tienen dos suites de PHPUnit distintas cada uno:
 
 - **Unitarias** (`composer test`, `tests/Unit/`): usan Brain Monkey para interceptar
   funciones de WordPress. Rápidas, sin base de datos, pero no pueden cubrir código que
@@ -45,31 +45,47 @@ este repositorio.
    generar salts únicos (`php -r '...random_bytes...'` o el
    [generador de WordPress.org](https://api.wordpress.org/secret-key/1.1/salt/)).
 
-4. **`yoast/phpunit-polyfills`** ya está en el `require-dev` de `dnorte-core/composer.json`
-   — `composer install` lo resuelve solo.
+4. **`tools/wp-tests/phpunit9/`**: PHPUnit 9 aislado y compartido — instalarlo una vez:
+
+   ```bash
+   cd tools/wp-tests/phpunit9
+   composer install
+   ```
 
 ## Ejecutar las pruebas de integración
 
 ```bash
-cd dnorte-core
-composer test:integration
+cd dnorte-core && composer test:integration
+cd dnorte-theme && composer test:integration
 ```
 
-Localiza el checkout compartido automáticamente (dos niveles por encima de
-`dnorte-core`: `tools/wp-tests/wordpress-develop`). Para usar una ubicación distinta,
-exporta `WP_TESTS_DIR`:
+Localiza el checkout compartido automáticamente (dos niveles por encima de cada
+paquete: `tools/wp-tests/wordpress-develop`). Para usar una ubicación distinta, exporta
+`WP_TESTS_DIR`:
 
 ```bash
 WP_TESTS_DIR=/ruta/a/otro/checkout/tests/phpunit composer test:integration
 ```
 
-## Cómo se activa dnorte-core en las pruebas
+## Cómo se activan dnorte-core/dnorte-theme en las pruebas
 
-`tests/Integration/bootstrap.php` engancha `tests_add_filter('muplugins_loaded', ...)`
-para requerir `dnorte-core.php` directamente — igual que en producción, sin ningún
-truco especial: `Application::resolveProviderClasses()` ya registra cada
-`ServiceProvider` con un simple `class_exists()`. `dnorte-theme` no se activa en este
-arnés (no hace falta para probar `DatabaseManager`/`Migrator`/`Installer`/REST).
+`dnorte-core/tests/Integration/bootstrap.php` engancha
+`tests_add_filter('muplugins_loaded', ...)` para requerir `dnorte-core.php`
+directamente — igual que en producción, sin ningún truco especial:
+`Application::resolveProviderClasses()` ya registra cada `ServiceProvider` con un
+simple `class_exists()`. `dnorte-theme` no se activa como tema en su propio arnés: sus
+clases con cobertura de integración (`HomeContentProvider`) son consultas `WP_Query`
+planas, autoloadeables directamente vía el mapeo PSR-4 de `tools/wp-tests/phpunit9/`
+sin pasar por `functions.php`.
+
+## Un solo PHPUnit 9 compartido por ambos paquetes
+
+`tools/wp-tests/phpunit9/composer.json` mapea `DNorteCore\\` y `DNorteTheme\\`
+directamente a su `src/` respectivo por ruta — el mismo "meta-proyecto" Composer,
+compartido, para los dos paquetes que necesiten pruebas de integración, en vez de
+duplicar la instalación de PHPUnit 9 en cada uno. Mismo patrón que
+`tools/wp-tests/phpunit9/` en ND Platform (que además comparte 11 paquetes, no solo
+dos).
 
 ## Lección real: la instalación ya corrió antes de que arranque cualquier test
 

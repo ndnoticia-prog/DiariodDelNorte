@@ -53,10 +53,16 @@ package_dnorte_theme() {
 	mkdir -p "${stage}"
 
 	cp "${ROOT_DIR}/dnorte-theme/style.css" "${stage}/"
-	cp "${ROOT_DIR}/dnorte-theme/functions.php" "${stage}/"
-	cp "${ROOT_DIR}/dnorte-theme/header.php" "${stage}/"
-	cp "${ROOT_DIR}/dnorte-theme/footer.php" "${stage}/"
-	cp "${ROOT_DIR}/dnorte-theme/index.php" "${stage}/"
+	# Todas las plantillas de la jerarquía de WordPress en la raíz del tema
+	# (functions.php, header.php, footer.php, index.php, front-page.php, single.php,
+	# archive.php, ...), en vez de una lista fija: una plantilla nueva no debe
+	# requerir acordarse de actualizar este script para quedar incluida en el zip
+	# — bug real encontrado en la verificación de v0.1.0-alpha.6 (front-page.php
+	# faltaba en el zip, la portada usaba el fallback index.php sin que ningún test
+	# lo detectara).
+	cp "${ROOT_DIR}"/dnorte-theme/*.php "${stage}/"
+	rm -f "${stage}/phpstan-bootstrap.php" # solo para análisis estático en desarrollo
+	cp -R "${ROOT_DIR}/dnorte-theme/template-parts" "${stage}/template-parts"
 	cp -R "${ROOT_DIR}/dnorte-theme/src" "${stage}/src"
 	cp -R "${ROOT_DIR}/dnorte-theme/dist" "${stage}/dist"
 

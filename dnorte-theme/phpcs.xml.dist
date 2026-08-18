@@ -8,6 +8,11 @@
     <file>index.php</file>
     <file>header.php</file>
     <file>footer.php</file>
+    <file>front-page.php</file>
+    <file>single.php</file>
+    <file>archive.php</file>
+    <file>comments.php</file>
+    <file>template-parts</file>
 
     <arg value="sp"/>
     <arg name="colors"/>
