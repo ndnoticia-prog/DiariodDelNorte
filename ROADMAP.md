@@ -28,17 +28,25 @@ verifica además contra un WordPress real en el navegador antes de cerrarse.
       corregidos en el proceso: `HookManager` le faltaba `doAction()`/`applyFilters()`
       (solo tenía la mitad del wrapper), y `Application` llamaba `apply_filters()`
       directo en vez de pasar por `HookManager` — ver "Fixed" en `CHANGELOG.md`.
-- [ ] Script de empaquetado (`tools/build/package.sh` o equivalente) que genere
-      `dnorte-core-0.1.0-alpha.1.zip`/`dnorte-theme-0.1.0-alpha.1.zip` instalables.
+- [x] Script de empaquetado (`tools/build/package.sh`) que genera
+      `dnorte-core-0.1.0-alpha.1.zip`/`dnorte-theme-0.1.0-alpha.1.zip` instalables —
+      solo `src/`/`config/`/`dnorte-core.php` (plugin) y `src/`/`dist/`/plantillas
+      (tema), nunca `vendor/`/`tests/`/configs de desarrollo.
 - [x] Verificación con el toolchain instalado: `composer install` y
       `npm install && npm run build` en verde, generan `dist/app.css`/`dist/app.js`.
-- [x] Activación verificada en un WordPress real vía WP-CLI (no solo revisión de código,
-      no un zip todavía — symlinks de desarrollo): plugin y tema activos, front-end
-      cargando (assets de Vite servidos), modo oscuro funcionando sin parpadeo, dashboard
-      y pantallas de administración (Plugins, Temas, Menús) sin errores, `debug.log`
-      vacío. Encontrado y corregido en el proceso: `ThemeServiceProvider` enganchaba
-      `registerMenus()` a un hook inexistente (`register_nav_menus` no es una action de
-      WordPress) — ver "Fixed" en `CHANGELOG.md`.
+- [x] Activación verificada en un WordPress real vía WP-CLI, primero con symlinks de
+      desarrollo y después reemplazando ambos por los `.zip` reales generados por
+      `package.sh` (instalados con `wp plugin install`/`wp theme install`, exactamente
+      el flujo de "Subir plugin"/"Subir tema" de wp-admin): plugin y tema activos,
+      front-end cargando (assets de Vite servidos), modo oscuro y claro funcionando sin
+      parpadeo, dashboard y pantallas de administración (Plugins, Temas, Menús) sin
+      errores, `debug.log` vacío en todo el recorrido. Encontrado y corregido en el
+      proceso: `ThemeServiceProvider` enganchaba `registerMenus()` a un hook inexistente
+      (`register_nav_menus` no es una action de WordPress) — ver "Fixed" en
+      `CHANGELOG.md`. Nota: misma base de datos que las verificaciones anteriores, no
+      una instalación con base de datos nueva desde cero (ver `docs/handoff-nd-platform.md`
+      §5 sobre por qué ND sí exige eso para cerrar una versión — pendiente para el cierre
+      real de `v0.1.0-alpha.1`).
 
 ## Próximas versiones (por decidir)
 

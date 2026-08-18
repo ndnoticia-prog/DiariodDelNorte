@@ -6,6 +6,9 @@ Formato basado en [Keep a Changelog](https://keepachangelog.com/es-ES/1.0.0/).
 
 ### Added
 
+- `tools/build/package.sh`: genera `dnorte-core-<version>.zip`/`dnorte-theme-<version>.zip`
+  instalables — solo `src/`/`config/`/`dnorte-core.php` en el plugin y
+  `src/`/`dist/`/plantillas en el tema, nunca `vendor/`/`tests/`/configs de desarrollo.
 - Scaffold del repositorio: `composer.json`/`package.json` raíz, `.gitignore`,
   `.editorconfig`, `README.md`, `ROADMAP.md`, `docs/Architecture.md`.
 - `docs/handoff-nd-platform.md`: compilación de arquitectura, decisiones y lecciones
@@ -63,3 +66,9 @@ Formato basado en [Keep a Changelog](https://keepachangelog.com/es-ES/1.0.0/).
   (variables tipadas en vez de `Container::get()` repetido) y `HookManager`
   (`doAction()`/`applyFilters()` nuevos): front-end y `wp-admin/nav-menus.php` sin
   errores, `debug.log` vacío.
+- `tools/build/package.sh` verificado de punta a punta: ambos `.zip` generados e
+  instalados vía WP-CLI (`wp plugin install`/`wp theme install`, el mismo flujo que
+  "Subir plugin"/"Subir tema" en wp-admin) en el WordPress de desarrollo, reemplazando
+  los symlinks previos — plugin y tema activos como directorios reales (no symlinks),
+  front-end en modo claro y oscuro, dashboard, Plugins y Temas sin errores, `debug.log`
+  vacío en todo el recorrido.
