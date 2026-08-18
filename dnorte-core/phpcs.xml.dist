@@ -45,4 +45,13 @@
     <rule ref="WordPress.WP.AlternativeFunctions">
         <exclude-pattern>tests/*</exclude-pattern>
     </rule>
+    <!--
+    DatabaseManager es el único punto de acceso a $wpdb->prepare() de toda la
+    plataforma (ver docblock de la clase); la sniff no puede ver a través de esa
+    abstracción y marca cada llamada como "sin preparar" aunque siempre pasa por ahí.
+    Mismo criterio documentado en ND Platform.
+    -->
+    <rule ref="WordPress.DB.PreparedSQL.NotPrepared">
+        <exclude-pattern>src/Database/DatabaseManager.php</exclude-pattern>
+    </rule>
 </ruleset>

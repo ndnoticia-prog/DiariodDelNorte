@@ -2,6 +2,53 @@
 
 Formato basado en [Keep a Changelog](https://keepachangelog.com/es-ES/1.0.0/).
 
+## [Unreleased] — v0.1.0-alpha.2
+
+### Added
+
+- `dnorte-core`: `Database\DatabaseManager` (único punto de acceso a `$wpdb`,
+  sentencias preparadas obligatorias), `Migrator\Migrator` (tabla propia
+  `dnorte_migrations`, migraciones idempotentes), `Installer\Installer` (corre
+  migraciones pendientes, registra `dnorte_core_installed_version`).
+- `dnorte-core`: `register_activation_hook()` en `dnorte-core.php` + auto-reparación en
+  `init` vía `CoreServiceProvider::maybeRunUpgrade()` (cubre actualizar el plugin sin
+  desactivar/reactivar).
+- `dnorte-core`: `Routing\Router`, contrato `RestApi\Contracts\RegistersRoutes`,
+  `Providers\RestApiServiceProvider` (filtro `dnorte_core/rest_controllers`) y el
+  primer endpoint real, `GET /wp-json/dnorte/v1/system/status`
+  (`SystemStatusController`).
+- 5 pruebas unitarias PHPUnit (Brain Monkey) nuevas: `Router`, `SystemStatusController`,
+  `RestApiServiceProvider` (32 en total en `dnorte-core`).
+
+### Fixed
+
+- `dnorte-core`: `wpdb::prepare()` puede devolver `null` cuando detecta un error de
+  programación (marcadores de posición que no coinciden con los parámetros dados);
+  `DatabaseManager` no lo contemplaba y podía propagar ese `null` a `$wpdb->query()`/
+  `get_row()`, que esperan `string`. Encontrado por PHPStan (nivel máximo), no por
+  revisión manual. Corregido centralizando la preparación en un método privado que
+  trata `null` como "sin resultado" — nunca ejecuta una consulta rota.
+
+### Verified
+
+- `composer run check` en verde (0 errores PHPCS, 0 errores PHPStan nivel máximo, 32
+  pruebas PHPUnit).
+- `.zip` de `dnorte-core` regenerado con los módulos nuevos e instalado sobre el
+  WordPress real de desarrollo (`wp plugin install --force`): `GET
+  /wp-json/dnorte/v1/system/status` responde el JSON esperado (verificado con
+  permalinks "bonitos" y con `?rest_route=`), dashboard/Plugins sin errores, `debug.log`
+  vacío en todo el recorrido.
+
+### Nota de alcance
+
+`DatabaseManager`/`Migrator`/`Installer` no tienen pruebas unitarias con mocks: son
+`final` (PHPUnit/Mockery no pueden generar un doble) y dependen de `wpdb`, una clase
+real de WordPress no cargada en el proceso de pruebas unitarias. Misma limitación que ND
+Platform documentó desde su propio alpha.1 y resolvió con una suite de pruebas de
+integración aparte, contra un WordPress/MySQL reales — infraestructura pendiente de
+montar en este repo (ver `docs/handoff-nd-platform.md` §6 y "Próximas versiones" en
+`ROADMAP.md`).
+
 ## [Unreleased] — v0.1.0-alpha.1
 
 ### Added

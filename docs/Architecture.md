@@ -61,9 +61,56 @@ Mismo patrón que ND Platform usa para `nd_core/providers`, `nd_core/rest_contro
 `nd_core/admin_pages`: un filtro público + una lista de clases, sin que `dnorte-core`
 tenga que conocer la existencia de cada módulo que se añada más adelante.
 
+## Base de datos y migraciones
+
+`DNorteCore\Database\DatabaseManager` envuelve `$wpdb` con sentencias preparadas
+obligatorias (nunca interpolación directa) — único punto de acceso a `$wpdb` de toda la
+plataforma. `DNorteCore\Migrator\Migrator` versiona el esquema propio en una tabla
+`{prefix}dnorte_migrations`, ejecutando cada `Migration` (`name()`/`up()`/`down()`) una
+sola vez. `DNorteCore\Installer\Installer` orquesta la corrida y registra la versión
+instalada en `wp_options` (`dnorte_core_installed_version`).
+
+Dos disparadores, no uno: `register_activation_hook()` (en `dnorte-core.php`, tiene que
+llamarse en carga del archivo principal — no se puede diferir a `Application::boot()`,
+que corre en `after_setup_theme`) cubre la primera instalación; `CoreServiceProvider`
+además revisa en cada `init` si la versión instalada quedó desactualizada y vuelve a
+correr el instalador — cubre actualizar el plugin sin desactivar/reactivar. Mismo patrón
+que `CoreServiceProvider::maybeRunUpgrade()` en ND Platform.
+
+**Por qué `DatabaseManager`/`Migrator`/`Installer` no tienen pruebas unitarias con
+mocks**: `DatabaseManager` y `Migrator` son `final` (como toda la plataforma) y
+dependen de `wpdb`, una clase real de WordPress no cargada en el proceso de pruebas
+unitarias — ni PHPUnit ni Mockery pueden generar un doble de una clase `final`, y
+`wpdb` tampoco existe fuera de un WordPress real para poder sustituirlo por un doble
+propio. ND Platform documentó exactamente esta misma limitación desde su alpha.1 y la
+resolvió con una suite de pruebas de integración aparte, contra un WordPress/MySQL
+reales (ver `handoff-nd-platform.md` §6) — infraestructura que este proyecto todavía no
+tiene montada. Mientras tanto, esta capa se verifica manualmente contra el WordPress de
+desarrollo real (ver `CHANGELOG.md`).
+
+## REST API
+
+Mismo patrón que el registro de providers: un filtro público
+(`dnorte_core/rest_controllers`) + un contrato (`RegistersRoutes`) + un value object
+mínimo (`Router`, que envuelve `register_rest_route()` — único punto de acceso). Todo
+controlador se resuelve vía el `Container` y se registra en `rest_api_init`, centralizado
+por `RestApiServiceProvider`. Cualquier módulo se suma sin que `dnorte-core` tenga que
+conocer su existencia:
+
+```php
+add_filter('dnorte_core/rest_controllers', function (array $controllers): array {
+    $controllers[] = MiModulo\RestApi\Controllers\MiControlador::class;
+
+    return $controllers;
+});
+```
+
+`SystemStatusController` (`GET /wp-json/dnorte/v1/system/status`) es el primer y único
+endpoint por ahora — estado público sin datos sensibles (versión del plugin/tema/WP),
+mismo propósito que `GET /wp-json/nd/v1/system/status` en ND Platform.
+
 ## Qué falta por decidir/documentar aquí
 
-Este documento cubre solo lo que ya existe (arranque, DI, hooks). A medida que se añadan
-módulos (base de datos/migraciones, REST, caché, seguridad, SEO, ...) documentar en este
-mismo fichero las decisiones de diseño y qué se reimplementa vs. qué se reutiliza de
-WordPress core, siguiendo el mismo criterio que `handoff-nd-platform.md` §4.
+A medida que se añadan más módulos (caché, seguridad, SEO, ...) documentar en este mismo
+fichero las decisiones de diseño y qué se reimplementa vs. qué se reutiliza de WordPress
+core, siguiendo el mismo criterio que `handoff-nd-platform.md` §4.

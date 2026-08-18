@@ -48,12 +48,53 @@ verifica además contra un WordPress real en el navegador antes de cerrarse.
       §5 sobre por qué ND sí exige eso para cerrar una versión — pendiente para el cierre
       real de `v0.1.0-alpha.1`).
 
+## v0.1.0-alpha.2 — Base de datos y REST API
+
+- [x] `dnorte-core`: `Database\DatabaseManager` (único punto de acceso a `$wpdb`,
+      sentencias preparadas obligatorias — `select()`/`selectOne()`/`insert()`/
+      `update()`/`delete()`/`statement()`, más `unprepared()` exclusivo para DDL de
+      migraciones), `table()`/`wpTable()` para distinguir tablas propias de nativas.
+- [x] `dnorte-core`: `Migrator\Migrator` (tabla propia `{prefix}dnorte_migrations`,
+      migraciones idempotentes vía contrato `Migration`), `Installer\Installer`
+      (corre migraciones pendientes y registra `dnorte_core_installed_version` en
+      `wp_options`). Dos disparadores: `register_activation_hook()` en
+      `dnorte-core.php` (primera instalación) y `CoreServiceProvider` en `init`
+      (auto-reparación si la versión instalada quedó desatrasada, sin depender de
+      desactivar/reactivar) — ver "Base de datos y migraciones" en
+      `docs/Architecture.md`.
+- [x] `dnorte-core`: `Routing\Router` (único punto de acceso a
+      `register_rest_route()`), contrato `RestApi\Contracts\RegistersRoutes`,
+      `Providers\RestApiServiceProvider` (filtro `dnorte_core/rest_controllers`,
+      mismo patrón que `dnorte_core/providers`), y el primer endpoint real:
+      `GET /wp-json/dnorte/v1/system/status` (`SystemStatusController`, público, sin
+      datos sensibles).
+- [x] Suite de pruebas unitarias PHPUnit (Brain Monkey) para `Router`,
+      `SystemStatusController` y `RestApiServiceProvider` (5 pruebas nuevas — 32 en
+      total en `dnorte-core`). `DatabaseManager`/`Migrator`/`Installer` **no** tienen
+      pruebas unitarias con mocks: son `final` y dependen de `wpdb`, una clase real de
+      WordPress no cargada en el proceso de pruebas — misma limitación que ND Platform
+      documentó desde su alpha.1 y resolvió con pruebas de integración aparte (ver
+      "Por qué..." en `docs/Architecture.md`); esa infraestructura (WordPress/MySQL
+      reales) no está montada todavía en este repo — pendiente.
+- [x] `composer run check` en verde (0 errores PHPCS, 0 errores PHPStan nivel máximo,
+      32 pruebas PHPUnit). Encontrado en el proceso (por PHPStan, no por revisión
+      manual): `wpdb::prepare()` puede devolver `null` en un error de programación —
+      `DatabaseManager` no lo propagaba a `$wpdb->query()`/`get_row()`, que esperan
+      `string`; corregido centralizando `prepare()` en un método privado que trata
+      `null` como "sin resultado", nunca ejecuta una consulta rota.
+- [x] Verificado en el WordPress real de desarrollo: `.zip` regenerado e instalado
+      (`wp plugin install --force`), endpoint `GET /wp-json/dnorte/v1/system/status`
+      respondiendo el JSON esperado (confirmado también con permalinks "bonitos", no
+      solo `?rest_route=`), dashboard/Plugins sin errores, `debug.log` vacío en todo
+      el recorrido.
+
 ## Próximas versiones (por decidir)
 
 Alcance a definir según necesidad real de Diario del Norte, no por paridad con ND
 Platform (ver `docs/handoff-nd-platform.md` §8). Candidatos, en orden probable de
-prioridad: base de datos/migraciones + REST API básica, SEO técnico (Schema.org,
-OpenGraph, sitemap), multimedia (WebP/AVIF, imagen destacada), y solo después evaluar
-publicidad propia, analítica propia, IA, búsqueda interna y workflow editorial — cada
-uno preguntando primero si un plugin ya probado o una función nativa de WordPress lo
-resuelve sin construir nada nuevo.
+prioridad: infraestructura de pruebas de integración con WordPress/MySQL reales (cierra
+el hueco de `DatabaseManager`/`Migrator`/`Installer` de alpha.2), SEO técnico
+(Schema.org, OpenGraph, sitemap), multimedia (WebP/AVIF, imagen destacada), y solo
+después evaluar publicidad propia, analítica propia, IA, búsqueda interna y workflow
+editorial — cada uno preguntando primero si un plugin ya probado o una función nativa
+de WordPress lo resuelve sin construir nada nuevo.

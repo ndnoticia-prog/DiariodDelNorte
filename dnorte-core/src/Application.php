@@ -23,7 +23,9 @@ use DNorteCore\Container\Container;
 use DNorteCore\Events\EventDispatcher;
 use DNorteCore\Hooks\HookManager;
 use DNorteCore\Providers\CoreServiceProvider;
+use DNorteCore\Providers\RestApiServiceProvider;
 use DNorteCore\Providers\ServiceProvider;
+use wpdb;
 
 final class Application {
 
@@ -85,6 +87,9 @@ final class Application {
 		$this->container->instance( HookManager::class, $this->hooks );
 		$this->container->instance( EventDispatcher::class, new EventDispatcher() );
 
+		global $wpdb;
+		$this->container->instance( wpdb::class, $wpdb );
+
 		return $config;
 	}
 
@@ -125,6 +130,7 @@ final class Application {
 	private function resolveProviderClasses( Config $config ): array {
 		$defaults = array(
 			CoreServiceProvider::class,
+			RestApiServiceProvider::class,
 		);
 
 		/** @var list<class-string<ServiceProvider>> $configured */

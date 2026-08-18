@@ -62,3 +62,24 @@ add_action(
 	},
 	5
 );
+
+/**
+ * register_activation_hook() debe llamarse desde el archivo principal del plugin en
+ * tiempo de carga (no se puede diferir a Application::boot(), que corre en
+ * after_setup_theme) — por eso construye sus dependencias a mano en vez de pasar por
+ * el Container. No hay migraciones propias todavía; esto solo deja lista la tabla de
+ * seguimiento (`{prefix}dnorte_migrations`) y registra la versión instalada, para que
+ * futuros módulos ya tengan la infraestructura sobre la que sumar sus migraciones.
+ */
+register_activation_hook(
+	__FILE__,
+	static function (): void {
+		global $wpdb;
+
+		$database  = new \DNorteCore\Database\DatabaseManager( $wpdb );
+		$migrator  = new \DNorteCore\Migrator\Migrator( $database );
+		$installer = new \DNorteCore\Installer\Installer( $migrator );
+
+		$installer->install( array(), DNORTE_CORE_VERSION );
+	}
+);
