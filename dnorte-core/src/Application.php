@@ -24,6 +24,7 @@ use DNorteCore\Events\EventDispatcher;
 use DNorteCore\Hooks\HookManager;
 use DNorteCore\Providers\CoreServiceProvider;
 use DNorteCore\Providers\RestApiServiceProvider;
+use DNorteCore\Providers\SeoServiceProvider;
 use DNorteCore\Providers\ServiceProvider;
 use wpdb;
 
@@ -131,6 +132,7 @@ final class Application {
 		$defaults = array(
 			CoreServiceProvider::class,
 			RestApiServiceProvider::class,
+			SeoServiceProvider::class,
 		);
 
 		/** @var list<class-string<ServiceProvider>> $configured */

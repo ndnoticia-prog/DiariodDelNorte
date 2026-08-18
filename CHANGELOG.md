@@ -2,6 +2,43 @@
 
 Formato basado en [Keep a Changelog](https://keepachangelog.com/es-ES/1.0.0/).
 
+## [Unreleased] — v0.1.0-alpha.4
+
+### Added
+
+- `dnorte-core`: `Seo\Context\SeoContext`/`SeoContextResolver` (única fuente de verdad
+  SEO por página: singular, home, archivo, búsqueda, 404).
+- `dnorte-core`: meta tags en `wp_head` — robots, canonical, OpenGraph, Twitter Cards
+  (`Seo\Meta\*`).
+- `dnorte-core`: Schema.org JSON-LD como un único `@graph` con `JSON_HEX_TAG|JSON_HEX_AMP`
+  — `Organization`, `WebSite` (con `SearchAction`), `NewsArticle`, `BreadcrumbList`
+  (`Seo\Schema\*`, `Seo\Breadcrumbs\BreadcrumbBuilder`).
+- `dnorte-core`: `robots.txt` con directiva `Sitemap:` hacia el `wp-sitemap.xml`
+  nativo de WordPress (`Seo\Robots\RobotsTxtBuilder`).
+- `dnorte-core`: `Providers\SeoServiceProvider`, registrado por defecto en
+  `Application`.
+- 20 pruebas unitarias (Brain Monkey) para las piezas puras del módulo SEO; 9 pruebas
+  de integración reales para `SeoContextResolver`, `BreadcrumbBuilder` y
+  `ArticleSchema` (52 unitarias + 23 de integración en total).
+
+### Fixed
+
+- `dnorte-core`: `BreadcrumbBuilder` usaba `get_the_archive_title()` para el nombre de
+  categoría/etiqueta en las migas de pan — WordPress core antepone "Category: "/
+  "Tag: " a ese título (correcto para el `<title>` SEO, no para una miga de pan).
+  Encontrado por la propia prueba de integración, no por revisión manual. Corregido
+  usando `WP_Term::$name` directamente.
+
+### Verified
+
+- `composer run check` (52 pruebas) y `composer test:integration` (23 pruebas) en
+  verde.
+- `.zip` de `dnorte-core` regenerado e instalado sobre el WordPress real de
+  desarrollo: meta tags, OpenGraph, Twitter Cards y JSON-LD (`Organization`+`WebSite`
+  en portada; +`NewsArticle`+`BreadcrumbList` en un artículo real) verificados en el
+  HTML servido; `robots.txt` con la directiva `Sitemap:`; `debug.log` vacío en todo
+  el recorrido.
+
 ## [Unreleased] — v0.1.0-alpha.3
 
 ### Added

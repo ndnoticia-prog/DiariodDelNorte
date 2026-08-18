@@ -117,11 +117,44 @@ verifica además contra un WordPress real en el navegador antes de cerrarse.
       WordPress real de desarrollo: front-end, `wp-json/dnorte/v1/system/status` y
       Plugins sin errores, `debug.log` vacío.
 
+## v0.1.0-alpha.4 — SEO técnico
+
+- [x] `dnorte-core`: `Seo\Context\SeoContext`/`SeoContextResolver` (única fuente de
+      verdad por página: singular, home, archivo, búsqueda, 404).
+- [x] `dnorte-core`: meta tags en `wp_head` — robots (con `max-image-preview:large`
+      para elegibilidad en Discover), canonical, OpenGraph, Twitter Cards
+      (`Seo\Meta\RobotsMetaBuilder`/`OpenGraphBuilder`/`TwitterCardBuilder`/`MetaTagsRenderer`).
+- [x] `dnorte-core`: Schema.org JSON-LD como un único `@graph` — `Organization`,
+      `WebSite` (con `SearchAction`), `NewsArticle`, `BreadcrumbList`
+      (`Seo\Schema\*`, `Seo\Breadcrumbs\BreadcrumbBuilder`).
+- [x] `dnorte-core`: `robots.txt` con directiva `Sitemap:` apuntando al
+      `wp-sitemap.xml` nativo de WordPress (`Seo\Robots\RobotsTxtBuilder`) — sin
+      reimplementar el sitemap general.
+- [x] `dnorte-core`: `SeoServiceProvider` registrado por defecto en `Application`.
+- [x] Suite de pruebas unitarias PHPUnit (Brain Monkey) para las piezas puras
+      (`RobotsMetaBuilder`, `OpenGraphBuilder`, `TwitterCardBuilder`,
+      `MetaTagsRenderer`, `OrganizationSchema`, `WebSiteSchema`,
+      `BreadcrumbListSchema`, `SchemaOutput`, `RobotsTxtBuilder`) — 20 pruebas nuevas
+      (52 en total en `dnorte-core`).
+- [x] Pruebas de integración reales para `SeoContextResolver`, `BreadcrumbBuilder` y
+      `ArticleSchema` (dependen de `WP_Post`/`WP_Term` reales) — 9 pruebas nuevas (23
+      en total), aprovechando la infraestructura de `v0.1.0-alpha.3`. Encontrado en el
+      proceso (por la propia prueba, no por revisión manual): `get_the_archive_title()`
+      antepone "Category: "/"Tag: " al nombre — correcto para el `<title>` SEO, mala
+      UX para una miga de pan; corregido usando el término directamente — ver "Fixed"
+      en `CHANGELOG.md`.
+- [x] `composer run check` (52 pruebas) y `composer test:integration` (23 pruebas) en
+      verde.
+- [x] `.zip` regenerado e instalado sobre el WordPress real de desarrollo: meta tags,
+      OpenGraph, Twitter Cards, JSON-LD (`Organization`+`WebSite`+`NewsArticle`+
+      `BreadcrumbList` verificado en un artículo real) y `robots.txt` con la directiva
+      `Sitemap:` funcionando, `debug.log` vacío.
+
 ## Próximas versiones (por decidir)
 
 Alcance a definir según necesidad real de Diario del Norte, no por paridad con ND
 Platform (ver `docs/handoff-nd-platform.md` §8). Candidatos, en orden probable de
-prioridad: SEO técnico (Schema.org, OpenGraph, sitemap), multimedia (WebP/AVIF, imagen
-destacada), y solo después evaluar publicidad propia, analítica propia, IA, búsqueda
-interna y workflow editorial — cada uno preguntando primero si un plugin ya probado o
-una función nativa de WordPress lo resuelve sin construir nada nuevo.
+prioridad: multimedia (WebP/AVIF, imagen destacada), sitemap de Google News/Discover, y
+solo después evaluar publicidad propia, analítica propia, IA, búsqueda interna y
+workflow editorial — cada uno preguntando primero si un plugin ya probado o una función
+nativa de WordPress lo resuelve sin construir nada nuevo.
