@@ -9,6 +9,6 @@ namespace DNorteCore\Container\Exceptions;
 
 use RuntimeException;
 
-final class UnresolvableParameterException extends RuntimeException
-{
+final class UnresolvableParameterException extends RuntimeException {
+
 }

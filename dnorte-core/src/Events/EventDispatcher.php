@@ -14,20 +14,18 @@ declare(strict_types=1);
 
 namespace DNorteCore\Events;
 
-final class EventDispatcher
-{
-    /** @var array<string, list<callable>> */
-    private array $listeners = [];
+final class EventDispatcher {
 
-    public function listen(string $eventName, callable $listener): void
-    {
-        $this->listeners[$eventName][] = $listener;
-    }
+	/** @var array<string, list<callable>> */
+	private array $listeners = array();
 
-    public function dispatch(Event $event): void
-    {
-        foreach ($this->listeners[$event->name()] ?? [] as $listener) {
-            $listener($event);
-        }
-    }
+	public function listen( string $eventName, callable $listener ): void {
+		$this->listeners[ $eventName ][] = $listener;
+	}
+
+	public function dispatch( Event $event ): void {
+		foreach ( $this->listeners[ $event->name() ] ?? array() as $listener ) {
+			$listener( $event );
+		}
+	}
 }

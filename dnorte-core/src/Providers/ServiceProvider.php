@@ -11,25 +11,22 @@ namespace DNorteCore\Providers;
 
 use DNorteCore\Container\Container;
 
-abstract class ServiceProvider
-{
-    public function __construct(protected readonly Container $container)
-    {
-    }
+abstract class ServiceProvider {
 
-    /**
-     * Registra bindings en el contenedor. No debe leer nada de WordPress todavía
-     * (puede ejecutarse antes de que WordPress esté completamente cargado).
-     */
-    public function register(): void
-    {
-    }
+	public function __construct( protected readonly Container $container ) {
+	}
 
-    /**
-     * Registra hooks/rutas de este módulo. Se ejecuta después de que todos los
-     * providers hayan tenido oportunidad de registrar sus bindings.
-     */
-    public function boot(): void
-    {
-    }
+	/**
+	 * Registra bindings en el contenedor. No debe leer nada de WordPress todavía
+	 * (puede ejecutarse antes de que WordPress esté completamente cargado).
+	 */
+	public function register(): void {
+	}
+
+	/**
+	 * Registra hooks/rutas de este módulo. Se ejecuta después de que todos los
+	 * providers hayan tenido oportunidad de registrar sus bindings.
+	 */
+	public function boot(): void {
+	}
 }

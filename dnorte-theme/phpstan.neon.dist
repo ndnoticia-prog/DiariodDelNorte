@@ -1,0 +1,15 @@
+parameters:
+    level: max
+    paths:
+        - src
+    bootstrapFiles:
+        - phpstan-bootstrap.php
+    treatPhpDocTypesAsCertain: false
+    checkMissingIterableValueType: true
+    checkGenericClassInNonGenericObjectType: true
+    scanFiles:
+        - ../dnorte-core/src/Application.php
+        - ../dnorte-core/src/Container/Container.php
+        - ../dnorte-core/src/Events/EventDispatcher.php
+        - ../dnorte-core/src/Hooks/HookManager.php
+        - ../dnorte-core/src/Providers/ServiceProvider.php

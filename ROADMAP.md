@@ -19,10 +19,15 @@ verifica además contra un WordPress real en el navegador antes de cerrarse.
 - [x] `dnorte-theme`: `header.php`/`footer.php`/`index.php` mínimos, modo oscuro
       (`data-theme` + `prefers-color-scheme`, script anti-parpadeo inline) y build de
       assets con Vite/Sass.
-- [ ] Suite de pruebas unitarias PHPUnit (Brain Monkey) para `Container`, `Config`,
-      `HookManager`, `EventDispatcher`.
-- [ ] `phpcs.xml`/`phpstan.neon` propios (aún no existen) para que `composer run check`
-      funcione de punta a punta — hoy solo se verificó `composer install`/`npm run build`.
+- [x] Suite de pruebas unitarias PHPUnit (Brain Monkey): `Container`, `Config`,
+      `HookManager`, `EventDispatcher` (27 pruebas) en `dnorte-core`; `ThemeServiceProvider`
+      (3 pruebas) en `dnorte-theme`.
+- [x] `phpcs.xml.dist`/`phpstan.neon.dist`/`phpunit.xml.dist` propios por paquete —
+      `composer run check` en verde de punta a punta en ambos paquetes (0 errores PHPCS,
+      0 errores PHPStan nivel máximo, 30 pruebas PHPUnit en total). Encontrados y
+      corregidos en el proceso: `HookManager` le faltaba `doAction()`/`applyFilters()`
+      (solo tenía la mitad del wrapper), y `Application` llamaba `apply_filters()`
+      directo en vez de pasar por `HookManager` — ver "Fixed" en `CHANGELOG.md`.
 - [ ] Script de empaquetado (`tools/build/package.sh` o equivalente) que genere
       `dnorte-core-0.1.0-alpha.1.zip`/`dnorte-theme-0.1.0-alpha.1.zip` instalables.
 - [x] Verificación con el toolchain instalado: `composer install` y

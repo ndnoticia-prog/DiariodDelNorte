@@ -25,114 +25,117 @@ use DNorteCore\Hooks\HookManager;
 use DNorteCore\Providers\CoreServiceProvider;
 use DNorteCore\Providers\ServiceProvider;
 
-final class Application
-{
-    private static ?self $instance = null;
+final class Application {
 
-    private readonly Container $container;
+	private static ?self $instance = null;
 
-    /** @var list<ServiceProvider> */
-    private array $providers = [];
+	private readonly Container $container;
 
-    private bool $booted = false;
+	private readonly HookManager $hooks;
 
-    private function __construct(private readonly string $pluginFile)
-    {
-        $this->container = new Container();
-    }
+	/** @var list<ServiceProvider> */
+	private array $providers = array();
 
-    public static function instance(?string $pluginFile = null): self
-    {
-        if (self::$instance === null) {
-            self::$instance = new self($pluginFile ?? '');
-        }
+	private bool $booted = false;
 
-        return self::$instance;
-    }
+	private function __construct( private readonly string $pluginFile ) {
+		$this->container = new Container();
+		$this->hooks     = new HookManager();
+	}
 
-    /**
-     * Solo para pruebas: permite reiniciar el singleton entre casos de prueba.
-     */
-    public static function reset(): void
-    {
-        self::$instance = null;
-    }
+	public static function instance( ?string $pluginFile = null ): self {
+		if ( self::$instance === null ) {
+			self::$instance = new self( $pluginFile ?? '' );
+		}
 
-    public function container(): Container
-    {
-        return $this->container;
-    }
+		return self::$instance;
+	}
 
-    public function boot(): void
-    {
-        if ($this->booted) {
-            return;
-        }
+	/**
+	 * Solo para pruebas: permite reiniciar el singleton entre casos de prueba.
+	 */
+	public static function reset(): void {
+		self::$instance = null;
+	}
 
-        $this->registerBaseBindings();
-        $this->loadConfig();
-        $this->registerProviders();
-        $this->bootProviders();
+	public function container(): Container {
+		return $this->container;
+	}
 
-        $this->container->get(HookManager::class)->flush();
+	public function boot(): void {
+		if ( $this->booted ) {
+			return;
+		}
 
-        $this->booted = true;
-    }
+		$config = $this->registerBaseBindings();
+		$this->loadConfig( $config );
+		$this->registerProviders( $config );
+		$this->bootProviders();
 
-    private function registerBaseBindings(): void
-    {
-        $this->container->instance(Container::class, $this->container);
-        $this->container->singleton(Config::class, static fn () => new Config());
-        $this->container->singleton(HookManager::class, static fn () => new HookManager());
-        $this->container->singleton(EventDispatcher::class, static fn () => new EventDispatcher());
-    }
+		$this->hooks->flush();
 
-    private function loadConfig(): void
-    {
-        $configDir = dirname($this->pluginFile) . '/config';
+		$this->booted = true;
+	}
 
-        if (is_dir($configDir)) {
-            $this->container->get(Config::class)->loadDirectory($configDir);
-        }
-    }
+	private function registerBaseBindings(): Config {
+		$config = new Config();
 
-    private function registerProviders(): void
-    {
-        foreach ($this->resolveProviderClasses() as $providerClass) {
-            if (! class_exists($providerClass)) {
-                continue;
-            }
+		$this->container->instance( Container::class, $this->container );
+		$this->container->instance( Config::class, $config );
+		$this->container->instance( HookManager::class, $this->hooks );
+		$this->container->instance( EventDispatcher::class, new EventDispatcher() );
 
-            $provider = new $providerClass($this->container);
-            $provider->register();
-            $this->providers[] = $provider;
-        }
-    }
+		return $config;
+	}
 
-    private function bootProviders(): void
-    {
-        foreach ($this->providers as $provider) {
-            $provider->boot();
-        }
-    }
+	private function loadConfig( Config $config ): void {
+		$configDir = dirname( $this->pluginFile ) . '/config';
 
-    /**
-     * Lista de clases ServiceProvider a instanciar. El propio núcleo se añade siempre;
-     * cualquier módulo o el tema activo se suma mediante el filtro `dnorte_core/providers`
-     * (mismo patrón que `nd_core/providers` en ND Platform — permite que dnorte-theme se
-     * registre sin que dnorte-core tenga que conocer su existencia).
-     *
-     * @return list<class-string<ServiceProvider>>
-     */
-    private function resolveProviderClasses(): array
-    {
-        $defaults = [
-            CoreServiceProvider::class,
-        ];
+		if ( is_dir( $configDir ) ) {
+			$config->loadDirectory( $configDir );
+		}
+	}
 
-        /** @var list<class-string<ServiceProvider>> $providers */
-        $providers = apply_filters('dnorte_core/providers', $defaults);
+	private function registerProviders( Config $config ): void {
+		foreach ( $this->resolveProviderClasses( $config ) as $providerClass ) {
+			if ( ! class_exists( $providerClass ) ) {
+				continue;
+			}
 
-        return $providers;
-    }
+			$provider = new $providerClass( $this->container );
+			$provider->register();
+			$this->providers[] = $provider;
+		}
+	}
+
+	private function bootProviders(): void {
+		foreach ( $this->providers as $provider ) {
+			$provider->boot();
+		}
+	}
+
+	/**
+	 * Lista de clases ServiceProvider a instanciar. El propio núcleo se añade siempre;
+	 * cualquier módulo o el tema activo se suma mediante el filtro `dnorte_core/providers`
+	 * (mismo patrón que `nd_core/providers` en ND Platform — permite que dnorte-theme se
+	 * registre sin que dnorte-core tenga que conocer su existencia).
+	 *
+	 * @return list<class-string<ServiceProvider>>
+	 */
+	private function resolveProviderClasses( Config $config ): array {
+		$defaults = array(
+			CoreServiceProvider::class,
+		);
+
+		/** @var list<class-string<ServiceProvider>> $configured */
+		$configured = $config->get( 'app.providers', array() );
+
+		/** @var list<class-string<ServiceProvider>> $providers */
+		$providers = $this->hooks->applyFilters(
+			'dnorte_core/providers',
+			array_values( array_unique( array( ...$defaults, ...$configured ) ) )
+		);
+
+		return $providers;
+	}
 }

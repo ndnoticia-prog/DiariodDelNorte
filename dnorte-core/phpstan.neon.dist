@@ -1,0 +1,11 @@
+parameters:
+    level: max
+    paths:
+        - src
+    treatPhpDocTypesAsCertain: false
+    checkMissingIterableValueType: true
+    checkGenericClassInNonGenericObjectType: true
+
+# szepeviktor/phpstan-wordpress y phpstan/phpstan-strict-rules ya se incluyen
+# automáticamente vía phpstan/extension-installer (composer.json); incluirlos
+# también aquí los registra dos veces y phpstan lo rechaza.

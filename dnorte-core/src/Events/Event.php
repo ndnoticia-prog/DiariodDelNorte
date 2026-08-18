@@ -13,10 +13,9 @@ declare(strict_types=1);
 
 namespace DNorteCore\Events;
 
-abstract class Event
-{
-    public function name(): string
-    {
-        return static::class;
-    }
+abstract class Event {
+
+	public function name(): string {
+		return static::class;
+	}
 }

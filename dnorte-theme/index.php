@@ -12,9 +12,9 @@ get_header();
 ?>
 
 <main id="contenido-principal" class="site-main" role="main">
-	<?php if (have_posts()) : ?>
+	<?php if ( have_posts() ) : ?>
 		<?php
-		while (have_posts()) :
+		while ( have_posts() ) :
 			the_post();
 			?>
 			<article <?php post_class(); ?>>
@@ -27,7 +27,7 @@ get_header();
 		the_posts_pagination();
 	else :
 		?>
-		<p><?php esc_html_e('No se encontró contenido.', 'dnorte-theme'); ?></p>
+		<p><?php esc_html_e( 'No se encontró contenido.', 'dnorte-theme' ); ?></p>
 	<?php endif; ?>
 </main>
 

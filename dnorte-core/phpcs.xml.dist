@@ -1,0 +1,48 @@
+<?xml version="1.0"?>
+<ruleset name="DNorte Core">
+    <description>Estándares de código para dnorte-core.</description>
+
+    <file>src</file>
+    <file>tests</file>
+    <file>dnorte-core.php</file>
+
+    <arg value="sp"/>
+    <arg name="colors"/>
+    <arg name="extensions" value="php"/>
+
+    <config name="testVersion" value="8.1-"/>
+    <config name="minimum_supported_wp_version" value="6.4"/>
+
+    <rule ref="WordPress-Extra">
+        <exclude name="WordPress.Files.FileName"/>
+        <!-- Código orientado a objetos en camelCase (PSR-12), no snake_case procedural. -->
+        <exclude name="WordPress.NamingConventions.ValidFunctionName"/>
+        <exclude name="WordPress.NamingConventions.ValidVariableName"/>
+        <exclude name="WordPress.PHP.YodaConditions"/>
+        <exclude name="Universal.NamingConventions.NoReservedKeywordParameterNames"/>
+    </rule>
+    <rule ref="PHPCompatibilityWP"/>
+    <rule ref="Generic.Arrays.DisallowShortArraySyntax.Found">
+        <severity>0</severity>
+    </rule>
+    <rule ref="Generic.Files.OneObjectStructurePerFile">
+        <exclude-pattern>tests/*</exclude-pattern>
+    </rule>
+    <!--
+    Falso positivo conocido de WPCS: la sniff marca cualquier sprintf()/printf()
+    no escapado, incluso cuando su resultado se usa únicamente como mensaje de
+    una excepción interna (nunca se imprime al navegador). Mismo criterio que
+    ND Platform (ver docs/handoff-nd-platform.md).
+    -->
+    <rule ref="WordPress.Security.EscapeOutput.ExceptionNotEscaped">
+        <exclude-pattern>src/Container/Container.php</exclude-pattern>
+    </rule>
+    <!--
+    Los tests unitarios (Brain Monkey, sin WordPress real) crean/limpian
+    ficheros temporales de fixtures; WP_Filesystem no está disponible ni es
+    apropiado fuera de un request real de WordPress.
+    -->
+    <rule ref="WordPress.WP.AlternativeFunctions">
+        <exclude-pattern>tests/*</exclude-pattern>
+    </rule>
+</ruleset>

@@ -17,134 +17,126 @@ use ReflectionClass;
 use ReflectionNamedType;
 use ReflectionParameter;
 
-final class Container
-{
-    /** @var array<string, array{concrete: callable|string, shared: bool}> */
-    private array $bindings = [];
+final class Container {
 
-    /** @var array<string, object> */
-    private array $instances = [];
+	/** @var array<string, array{concrete: callable|string, shared: bool}> */
+	private array $bindings = array();
 
-    public function bind(string $abstract, callable|string $concrete, bool $shared = false): void
-    {
-        $this->bindings[$abstract] = [
-            'concrete' => $concrete,
-            'shared' => $shared,
-        ];
-    }
+	/** @var array<string, object> */
+	private array $instances = array();
 
-    public function singleton(string $abstract, callable|string $concrete): void
-    {
-        $this->bind($abstract, $concrete, true);
-    }
+	public function bind( string $abstract, callable|string $concrete, bool $shared = false ): void {
+		$this->bindings[ $abstract ] = array(
+			'concrete' => $concrete,
+			'shared'   => $shared,
+		);
+	}
 
-    public function instance(string $abstract, object $instance): void
-    {
-        $this->instances[$abstract] = $instance;
-    }
+	public function singleton( string $abstract, callable|string $concrete ): void {
+		$this->bind( $abstract, $concrete, true );
+	}
 
-    public function has(string $id): bool
-    {
-        return isset($this->instances[$id]) || isset($this->bindings[$id]) || class_exists($id);
-    }
+	public function instance( string $abstract, object $instance ): void {
+		$this->instances[ $abstract ] = $instance;
+	}
 
-    public function get(string $id): mixed
-    {
-        return $this->make($id);
-    }
+	public function has( string $id ): bool {
+		return isset( $this->instances[ $id ] ) || isset( $this->bindings[ $id ] ) || class_exists( $id );
+	}
 
-    /**
-     * @param array<string, mixed> $parameters Valores explícitos para parámetros del constructor,
-     *                                          indexados por nombre de parámetro.
-     */
-    public function make(string $abstract, array $parameters = []): mixed
-    {
-        if (isset($this->instances[$abstract])) {
-            return $this->instances[$abstract];
-        }
+	public function get( string $id ): mixed {
+		return $this->make( $id );
+	}
 
-        if (isset($this->bindings[$abstract])) {
-            $binding = $this->bindings[$abstract];
-            $concrete = $binding['concrete'];
+	/**
+	 * @param array<string, mixed> $parameters Valores explícitos para parámetros del constructor,
+	 *                                          indexados por nombre de parámetro.
+	 */
+	public function make( string $abstract, array $parameters = array() ): mixed {
+		if ( isset( $this->instances[ $abstract ] ) ) {
+			return $this->instances[ $abstract ];
+		}
 
-            $object = is_callable($concrete)
-                ? $concrete($this, $parameters)
-                : $this->build($concrete, $parameters);
+		if ( isset( $this->bindings[ $abstract ] ) ) {
+			$binding  = $this->bindings[ $abstract ];
+			$concrete = $binding['concrete'];
 
-            if ($binding['shared']) {
-                $this->instances[$abstract] = $object;
-            }
+			$object = is_callable( $concrete )
+				? $concrete( $this, $parameters )
+				: $this->build( $concrete, $parameters );
 
-            return $object;
-        }
+			if ( $binding['shared'] ) {
+				$this->instances[ $abstract ] = $object;
+			}
 
-        return $this->build($abstract, $parameters);
-    }
+			return $object;
+		}
 
-    /**
-     * @param array<string, mixed> $parameters
-     */
-    private function build(string $className, array $parameters = []): object
-    {
-        if (! class_exists($className)) {
-            throw new UnresolvableParameterException(
-                sprintf('No es posible resolver "%s": la clase no existe y no hay binding registrado.', $className)
-            );
-        }
+		return $this->build( $abstract, $parameters );
+	}
 
-        $reflection = new ReflectionClass($className);
+	/**
+	 * @param array<string, mixed> $parameters
+	 */
+	private function build( string $className, array $parameters = array() ): object {
+		if ( ! class_exists( $className ) ) {
+			throw new UnresolvableParameterException(
+				sprintf( 'No es posible resolver "%s": la clase no existe y no hay binding registrado.', $className )
+			);
+		}
 
-        if (! $reflection->isInstantiable()) {
-            throw new UnresolvableParameterException(
-                sprintf('"%s" no es instanciable (interfaz/clase abstracta sin binding).', $className)
-            );
-        }
+		$reflection = new ReflectionClass( $className );
 
-        $constructor = $reflection->getConstructor();
+		if ( ! $reflection->isInstantiable() ) {
+			throw new UnresolvableParameterException(
+				sprintf( '"%s" no es instanciable (interfaz/clase abstracta sin binding).', $className )
+			);
+		}
 
-        if ($constructor === null) {
-            return new $className();
-        }
+		$constructor = $reflection->getConstructor();
 
-        $dependencies = array_map(
-            fn (ReflectionParameter $parameter) => $this->resolveParameter($parameter, $parameters, $className),
-            $constructor->getParameters()
-        );
+		if ( $constructor === null ) {
+			return new $className();
+		}
 
-        return $reflection->newInstanceArgs($dependencies);
-    }
+		$dependencies = array_map(
+			fn ( ReflectionParameter $parameter ) => $this->resolveParameter( $parameter, $parameters, $className ),
+			$constructor->getParameters()
+		);
 
-    /**
-     * @param array<string, mixed> $parameters
-     */
-    private function resolveParameter(ReflectionParameter $parameter, array $parameters, string $className): mixed
-    {
-        $name = $parameter->getName();
+		return $reflection->newInstanceArgs( $dependencies );
+	}
 
-        if (array_key_exists($name, $parameters)) {
-            return $parameters[$name];
-        }
+	/**
+	 * @param array<string, mixed> $parameters
+	 */
+	private function resolveParameter( ReflectionParameter $parameter, array $parameters, string $className ): mixed {
+		$name = $parameter->getName();
 
-        $type = $parameter->getType();
+		if ( array_key_exists( $name, $parameters ) ) {
+			return $parameters[ $name ];
+		}
 
-        if ($type instanceof ReflectionNamedType && ! $type->isBuiltin()) {
-            return $this->make($type->getName());
-        }
+		$type = $parameter->getType();
 
-        if ($parameter->isDefaultValueAvailable()) {
-            return $parameter->getDefaultValue();
-        }
+		if ( $type instanceof ReflectionNamedType && ! $type->isBuiltin() ) {
+			return $this->make( $type->getName() );
+		}
 
-        if ($parameter->allowsNull()) {
-            return null;
-        }
+		if ( $parameter->isDefaultValueAvailable() ) {
+			return $parameter->getDefaultValue();
+		}
 
-        throw new UnresolvableParameterException(
-            sprintf(
-                'No es posible resolver el parámetro "%s" de %s: sin type-hint de clase, sin valor por defecto y sin binding explícito.',
-                $name,
-                $className
-            )
-        );
-    }
+		if ( $parameter->allowsNull() ) {
+			return null;
+		}
+
+		throw new UnresolvableParameterException(
+			sprintf(
+				'No es posible resolver el parámetro "%s" de %s: sin type-hint de clase, sin valor por defecto y sin binding explícito.',
+				$name,
+				$className
+			)
+		);
+	}
 }

@@ -12,83 +12,91 @@ declare(strict_types=1);
 
 namespace DNorteCore\Hooks;
 
-final class HookManager
-{
-    /**
-     * @var array<string, array{type: string, hook: string, callback: callable, priority: int, args: int}>
-     */
-    private array $pending = [];
+final class HookManager {
 
-    private bool $flushed = false;
+	/**
+	 * @var array<string, array{type: string, hook: string, callback: callable, priority: int, args: int}>
+	 */
+	private array $pending = array();
 
-    public function addAction(string $hook, callable $callback, int $priority = 10, int $acceptedArgs = 1): string
-    {
-        return $this->register('action', $hook, $callback, $priority, $acceptedArgs);
-    }
+	private bool $flushed = false;
 
-    public function addFilter(string $hook, callable $callback, int $priority = 10, int $acceptedArgs = 1): string
-    {
-        return $this->register('filter', $hook, $callback, $priority, $acceptedArgs);
-    }
+	public function addAction( string $hook, callable $callback, int $priority = 10, int $acceptedArgs = 1 ): string {
+		return $this->register( 'action', $hook, $callback, $priority, $acceptedArgs );
+	}
 
-    private function register(string $type, string $hook, callable $callback, int $priority, int $acceptedArgs): string
-    {
-        $token = uniqid('dnorte_hook_', true);
+	public function addFilter( string $hook, callable $callback, int $priority = 10, int $acceptedArgs = 1 ): string {
+		return $this->register( 'filter', $hook, $callback, $priority, $acceptedArgs );
+	}
 
-        $this->pending[$token] = [
-            'type' => $type,
-            'hook' => $hook,
-            'callback' => $callback,
-            'priority' => $priority,
-            'args' => $acceptedArgs,
-        ];
+	private function register( string $type, string $hook, callable $callback, int $priority, int $acceptedArgs ): string {
+		$token = uniqid( 'dnorte_hook_', true );
 
-        if ($this->flushed) {
-            $this->wire($this->pending[$token]);
-        }
+		$this->pending[ $token ] = array(
+			'type'     => $type,
+			'hook'     => $hook,
+			'callback' => $callback,
+			'priority' => $priority,
+			'args'     => $acceptedArgs,
+		);
 
-        return $token;
-    }
+		if ( $this->flushed ) {
+			$this->wire( $this->pending[ $token ] );
+		}
 
-    public function remove(string $token): void
-    {
-        if (! isset($this->pending[$token])) {
-            return;
-        }
+		return $token;
+	}
 
-        $entry = $this->pending[$token];
+	/**
+	 * @param non-empty-string $hook
+	 */
+	public function doAction( string $hook, mixed ...$args ): void {
+		do_action( $hook, ...$args );
+	}
 
-        if ($entry['type'] === 'action') {
-            remove_action($entry['hook'], $entry['callback'], $entry['priority']);
-        } else {
-            remove_filter($entry['hook'], $entry['callback'], $entry['priority']);
-        }
+	/**
+	 * @param non-empty-string $hook
+	 */
+	public function applyFilters( string $hook, mixed $value, mixed ...$args ): mixed {
+		return apply_filters( $hook, $value, ...$args );
+	}
 
-        unset($this->pending[$token]);
-    }
+	public function remove( string $token ): void {
+		if ( ! isset( $this->pending[ $token ] ) ) {
+			return;
+		}
 
-    /**
-     * Traduce todos los listeners registrados hasta ahora a add_action/add_filter reales.
-     * Llamadas posteriores a addAction/addFilter se conectan de inmediato.
-     */
-    public function flush(): void
-    {
-        foreach ($this->pending as $entry) {
-            $this->wire($entry);
-        }
+		$entry = $this->pending[ $token ];
 
-        $this->flushed = true;
-    }
+		if ( $entry['type'] === 'action' ) {
+			remove_action( $entry['hook'], $entry['callback'], $entry['priority'] );
+		} else {
+			remove_filter( $entry['hook'], $entry['callback'], $entry['priority'] );
+		}
 
-    /**
-     * @param array{type: string, hook: string, callback: callable, priority: int, args: int} $entry
-     */
-    private function wire(array $entry): void
-    {
-        if ($entry['type'] === 'action') {
-            add_action($entry['hook'], $entry['callback'], $entry['priority'], $entry['args']);
-        } else {
-            add_filter($entry['hook'], $entry['callback'], $entry['priority'], $entry['args']);
-        }
-    }
+		unset( $this->pending[ $token ] );
+	}
+
+	/**
+	 * Traduce todos los listeners registrados hasta ahora a add_action/add_filter reales.
+	 * Llamadas posteriores a addAction/addFilter se conectan de inmediato.
+	 */
+	public function flush(): void {
+		foreach ( $this->pending as $entry ) {
+			$this->wire( $entry );
+		}
+
+		$this->flushed = true;
+	}
+
+	/**
+	 * @param array{type: string, hook: string, callback: callable, priority: int, args: int} $entry
+	 */
+	private function wire( array $entry ): void {
+		if ( $entry['type'] === 'action' ) {
+			add_action( $entry['hook'], $entry['callback'], $entry['priority'], $entry['args'] );
+		} else {
+			add_filter( $entry['hook'], $entry['callback'], $entry['priority'], $entry['args'] );
+		}
+	}
 }

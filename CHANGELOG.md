@@ -18,6 +18,16 @@ Formato basado en [Keep a Changelog](https://keepachangelog.com/es-ES/1.0.0/).
 - `dnorte-theme` (tema): bootstrap (`functions.php`, `style.css`), `ThemeServiceProvider`
   (theme supports, menús, encolado de assets), `header.php`/`footer.php`/`index.php`,
   modo oscuro con script anti-parpadeo inline, build de assets con Vite/Sass.
+- `phpcs.xml.dist`/`phpstan.neon.dist`/`phpunit.xml.dist` propios por paquete (WPCS +
+  PHPStan nivel máximo + PHPUnit 10, mismos criterios documentados que ND Platform:
+  camelCase en vez de snake_case, sin Yoda conditions, excepciones internas sin escapar).
+- `dnorte-core`: `HookManager::doAction()`/`applyFilters()` — faltaba la mitad del
+  wrapper tipado de WordPress (solo tenía addAction/addFilter).
+- Suite de pruebas unitarias PHPUnit (Brain Monkey): 27 pruebas para `Container`
+  (autowiring, bindings, singleton, errores), `Config` (dot notation, `loadDirectory()`),
+  `HookManager` (registro diferido, flush, remove) y `EventDispatcher` en `dnorte-core`;
+  3 pruebas para `ThemeServiceProvider` (theme supports, menús, wiring de hooks) en
+  `dnorte-theme`.
 
 ### Fixed
 
@@ -28,6 +38,15 @@ Formato basado en [Keep a Changelog](https://keepachangelog.com/es-ES/1.0.0/).
   en la primera verificación en navegador contra un WordPress real (no por ningún test).
   Corregido llamando `registerMenus()` desde `after_setup_theme`, igual que
   `registerThemeSupports()`.
+- `dnorte-core`: `Application::resolveProviderClasses()` llamaba a `apply_filters()`
+  directamente en vez de pasar por `HookManager` — violaba el principio de arquitectura
+  que el propio `docs/Architecture.md` documenta ("único punto de acceso a WordPress").
+  Encontrado por PHPCS (`WordPress.NamingConventions.ValidHookName`, el mismo tipo de
+  falso positivo que desaparece cuando el hook pasa por el wrapper, como ya hacía ND).
+  De paso, `Application` dejó de repreguntarle al contenedor por `Config`/`HookManager`
+  en cada método interno (`Container::get()` devuelve `mixed` sin generics — PHPStan no
+  podía verificar las llamadas encadenadas) y ahora usa variables tipadas locales,
+  mismo patrón que `NDCore\Application`.
 
 ### Verified
 
@@ -38,3 +57,9 @@ Formato basado en [Keep a Changelog](https://keepachangelog.com/es-ES/1.0.0/).
   cambiando `localStorage`), dashboard y pantallas de administración (Plugins, Temas,
   Menús) sin errores, `debug.log` vacío en todo el recorrido (`WP_DEBUG`/`WP_DEBUG_LOG`
   activos).
+- `composer run check` (PHPCS/WPCS + PHPStan nivel máximo + PHPUnit) en verde en ambos
+  paquetes: `dnorte-core` (27 pruebas, 38 aserciones) y `dnorte-theme` (3 pruebas).
+  Reverificado en el WordPress real de desarrollo tras el refactor de `Application`
+  (variables tipadas en vez de `Container::get()` repetido) y `HookManager`
+  (`doAction()`/`applyFilters()` nuevos): front-end y `wp-admin/nav-menus.php` sin
+  errores, `debug.log` vacío.
