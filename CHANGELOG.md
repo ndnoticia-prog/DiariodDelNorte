@@ -2,6 +2,39 @@
 
 Formato basado en [Keep a Changelog](https://keepachangelog.com/es-ES/1.0.0/).
 
+## [Unreleased] — v0.1.0-alpha.6
+
+### Added
+
+- `dnorte-theme`: sistema de diseño ampliado (`app.scss`) — tokens de color
+  (superficie, texto atenuado, enlaces visitados), tipografía (titulares serif del
+  sistema, cuerpo sans del sistema, sin fuentes externas), escala de espaciado,
+  radios/sombras.
+- `dnorte-theme`: cabecera rediseñada — barra superior con fecha, masthead con línea
+  de acento, botón visible para alternar modo oscuro, menú móvil con botón
+  hamburguesa.
+- `dnorte-theme`: pie de página con layout de columnas.
+- `dnorte-theme`: `assets/js/app.js` — interacción del botón de tema y del menú
+  móvil.
+
+### Fixed
+
+- `dnorte-theme`: `text-transform: capitalize` en la fecha de la barra superior
+  capitalizaba cada palabra ("De August De"), rompiendo las reglas de capitalización
+  del español. Encontrado en la propia verificación visual, no por revisión de
+  código.
+- `dnorte-theme`: `.header-controls` sin `flex-wrap` combinado con el `<nav>` en
+  `flex-basis: 100%` comprimía el botón de menú móvil hasta volverlo invisible en
+  pantallas angostas; el ícono SVG del botón tampoco tenía tamaño explícito.
+  Corregido con `flex-wrap: wrap` + `flex-shrink: 0` + tamaño de ícono explícito.
+
+### Verified
+
+- `composer run check` (3 pruebas) en verde en `dnorte-theme`.
+- WordPress real de desarrollo, escritorio y móvil (375px), claro y oscuro, con un
+  menú real asignado: masthead, navegación, toggle de tema (confirmado disparando el
+  evento `click` real del botón) y menú móvil funcionando, `debug.log` vacío.
+
 ## [Unreleased] — v0.1.0-alpha.5
 
 ### Added

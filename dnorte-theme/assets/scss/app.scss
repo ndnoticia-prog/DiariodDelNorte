@@ -1,6 +1,14 @@
 // Punto de entrada de estilos. Mobile-first; breakpoints como variables SCSS
-// para que nd-media/dnorte-media (si se añade en el futuro) pueda alinear
-// `sizes` de imágenes responsive a los mismos valores.
+// para que dnorte-media (si se añade en el futuro) pueda alinear `sizes` de
+// imágenes responsive a los mismos valores.
+//
+// Tipografía: pilas de fuentes del sistema (serif para titulares, sans para
+// cuerpo/UI) — sin cargar fuentes externas. Es una elección deliberada, no un
+// placeholder a medias: evita una petición de red adicional (rendimiento) y
+// una dependencia de terceros (privacidad) mientras no haya una guía de marca
+// real que exija una tipografía específica. El color de acento (--color-accent)
+// sí es un placeholder — sustituir por la identidad de marca real de Diario
+// del Norte en cuanto exista.
 
 $breakpoint-sm: 480px;
 $breakpoint-md: 768px;
@@ -9,27 +17,91 @@ $breakpoint-xl: 1280px;
 
 :root {
 	--color-bg: #ffffff;
-	--color-text: #111111;
+	--color-surface: #f7f6f3;
+	--color-text: #1a1a1a;
+	--color-text-muted: #5c5c5c;
+	--color-border: #e2e0db;
 	--color-accent: #b3121b; // placeholder — sustituir por la identidad de marca real
-	--color-border: #e5e5e5;
+	--color-accent-contrast: #ffffff;
+	--color-link: #8a0f17;
+	--color-link-visited: #6d1520;
+
+	--font-headline: georgia, 'Times New Roman', times, serif;
+	--font-body: system-ui, -apple-system, 'Segoe UI', roboto, sans-serif;
+
+	--space-1: 0.25rem;
+	--space-2: 0.5rem;
+	--space-3: 1rem;
+	--space-4: 1.5rem;
+	--space-5: 2.5rem;
+
+	--radius: 3px;
+	--shadow-sm: 0 1px 2px rgb(0 0 0 / 8%);
+	--shadow-md: 0 4px 16px rgb(0 0 0 / 12%);
+
+	color-scheme: light;
 }
 
 :root[data-theme='dark'] {
-	--color-bg: #0f0f10;
-	--color-text: #f2f2f2;
+	--color-bg: #121212;
+	--color-surface: #1c1c1c;
+	--color-text: #f0efec;
+	--color-text-muted: #a8a8a8;
+	--color-border: #333331;
 	--color-accent: #ff5a5f;
-	--color-border: #2a2a2c;
+	--color-accent-contrast: #121212;
+	--color-link: #ff8a8a;
+	--color-link-visited: #d9a3a3;
+
+	--shadow-sm: 0 1px 2px rgb(0 0 0 / 40%);
+	--shadow-md: 0 4px 16px rgb(0 0 0 / 50%);
+
+	color-scheme: dark;
 }
 
 * {
 	box-sizing: border-box;
 }
 
+html {
+	-webkit-text-size-adjust: 100%;
+}
+
 body {
 	background: var(--color-bg);
 	color: var(--color-text);
 	margin: 0;
-	font-family: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+	font-family: var(--font-body);
+	line-height: 1.5;
+	transition: background-color 0.15s ease, color 0.15s ease;
+}
+
+h1,
+h2,
+h3,
+h4 {
+	font-family: var(--font-headline);
+	line-height: 1.2;
+	margin: 0 0 var(--space-2);
+}
+
+a {
+	color: var(--color-link);
+
+	&:visited {
+		color: var(--color-link-visited);
+	}
+
+	&:hover,
+	&:focus-visible {
+		text-decoration-thickness: 2px;
+	}
+}
+
+img {
+	max-width: 100%;
+	height: auto;
+	display: block;
 }
 
 .skip-link {
@@ -37,33 +109,243 @@ body {
 	left: -9999px;
 	top: 0;
 	background: var(--color-accent);
-	color: #fff;
-	padding: 0.5rem 1rem;
+	color: var(--color-accent-contrast);
+	padding: var(--space-2) var(--space-3);
 	z-index: 1000;
+	border-radius: 0 0 var(--radius) 0;
 
 	&:focus {
-		left: 0.5rem;
-		top: 0.5rem;
+		left: 0;
+		top: 0;
 	}
 }
 
-.site-header,
-.site-footer {
-	display: flex;
-	align-items: center;
-	justify-content: space-between;
-	padding: 1rem;
-	border-bottom: 1px solid var(--color-border);
+// ---------------------------------------------------------------------------
+// Cabecera
+// ---------------------------------------------------------------------------
+
+.site-topbar {
+	background: var(--color-text);
+	color: var(--color-bg);
+	font-size: 0.8125rem;
+
+	.site-topbar__inner {
+		max-width: $breakpoint-xl;
+		margin: 0 auto;
+		padding: var(--space-1) var(--space-3);
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+		gap: var(--space-2);
+	}
+
+	.site-topbar__date {
+		// Sin text-transform: capitalize — en español solo va mayúscula la
+		// primera letra de la frase, no cada palabra ("de"/"agosto" en
+		// minúscula es lo correcto, no "De Agosto").
+		opacity: 0.85;
+	}
 }
 
-.site-footer {
-	border-bottom: none;
-	border-top: 1px solid var(--color-border);
-	margin-top: 2rem;
+.site-header {
+	border-bottom: 3px solid var(--color-accent);
+	background: var(--color-bg);
+
+	.site-header__inner {
+		max-width: $breakpoint-xl;
+		margin: 0 auto;
+		padding: var(--space-4) var(--space-3) var(--space-3);
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+		gap: var(--space-3);
+		flex-wrap: wrap;
+	}
 }
+
+.site-branding {
+	a {
+		color: var(--color-text);
+		text-decoration: none;
+		font-family: var(--font-headline);
+		font-weight: 700;
+		font-size: clamp(1.5rem, 4vw, 2.25rem);
+		letter-spacing: -0.02em;
+	}
+
+	img {
+		max-height: 56px;
+		width: auto;
+	}
+}
+
+.header-controls {
+	display: flex;
+	align-items: center;
+	flex-wrap: wrap;
+	gap: var(--space-3);
+}
+
+.theme-toggle {
+	appearance: none;
+	background: none;
+	border: 1px solid var(--color-border);
+	border-radius: 999px;
+	width: 2.25rem;
+	height: 2.25rem;
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	cursor: pointer;
+	color: var(--color-text);
+	flex-shrink: 0;
+
+	&:hover,
+	&:focus-visible {
+		border-color: var(--color-accent);
+		color: var(--color-accent);
+	}
+
+	svg {
+		width: 1.1rem;
+		height: 1.1rem;
+	}
+
+	.theme-toggle__icon--dark {
+		display: none;
+	}
+
+	:root[data-theme='dark'] & {
+		.theme-toggle__icon--light {
+			display: none;
+		}
+
+		.theme-toggle__icon--dark {
+			display: block;
+		}
+	}
+}
+
+.nav-toggle {
+	appearance: none;
+	background: none;
+	border: 1px solid var(--color-border);
+	border-radius: var(--radius);
+	width: 2.25rem;
+	height: 2.25rem;
+	flex-shrink: 0;
+	display: none;
+	align-items: center;
+	justify-content: center;
+	cursor: pointer;
+	color: var(--color-text);
+
+	svg {
+		width: 1.25rem;
+		height: 1.25rem;
+	}
+
+	@media (max-width: #{$breakpoint-md - 1px}) {
+		display: inline-flex;
+	}
+}
+
+.main-navigation {
+	@media (max-width: #{$breakpoint-md - 1px}) {
+		flex-basis: 100%;
+		order: 3;
+		max-height: 0;
+		overflow: hidden;
+		transition: max-height 0.2s ease;
+
+		&.is-open {
+			max-height: 24rem;
+		}
+	}
+
+	ul {
+		list-style: none;
+		margin: 0;
+		padding: 0;
+		display: flex;
+		flex-wrap: wrap;
+		gap: var(--space-1) var(--space-4);
+
+		@media (max-width: #{$breakpoint-md - 1px}) {
+			flex-direction: column;
+			gap: 0;
+			padding-top: var(--space-2);
+		}
+	}
+
+	a {
+		display: inline-block;
+		padding: var(--space-2) 0;
+		color: var(--color-text);
+		text-decoration: none;
+		font-weight: 600;
+		font-size: 0.9375rem;
+		text-transform: uppercase;
+		letter-spacing: 0.03em;
+		border-bottom: 2px solid transparent;
+
+		&:hover,
+		&:focus-visible {
+			color: var(--color-accent);
+			border-bottom-color: var(--color-accent);
+		}
+	}
+}
+
+// ---------------------------------------------------------------------------
+// Contenido
+// ---------------------------------------------------------------------------
 
 .site-main {
 	max-width: $breakpoint-xl;
 	margin: 0 auto;
-	padding: 1rem;
+	padding: var(--space-4) var(--space-3);
+	min-height: 40vh;
+}
+
+// ---------------------------------------------------------------------------
+// Pie
+// ---------------------------------------------------------------------------
+
+.site-footer {
+	border-top: 1px solid var(--color-border);
+	background: var(--color-surface);
+	margin-top: var(--space-5);
+
+	.site-footer__inner {
+		max-width: $breakpoint-xl;
+		margin: 0 auto;
+		padding: var(--space-4) var(--space-3);
+	}
+
+	.footer-navigation ul {
+		list-style: none;
+		margin: 0 0 var(--space-3);
+		padding: 0;
+		display: flex;
+		flex-wrap: wrap;
+		gap: var(--space-2) var(--space-4);
+	}
+
+	.footer-navigation a {
+		color: var(--color-text-muted);
+		text-decoration: none;
+		font-size: 0.875rem;
+
+		&:hover,
+		&:focus-visible {
+			color: var(--color-accent);
+		}
+	}
+
+	.site-info {
+		color: var(--color-text-muted);
+		font-size: 0.8125rem;
+		margin: 0;
+	}
 }

@@ -181,11 +181,47 @@ verifica además contra un WordPress real en el navegador antes de cerrarse.
       genera para una fuente más pequeña que 1200×675 (WordPress evita
       ampliar-y-recortar) — comportamiento esperado, no un bug.
 
+## v0.1.0-alpha.6 — Identidad visual (fase 1: cabecera y sistema de diseño)
+
+Con la base técnica cerrada (alpha.1–alpha.5), arranca la fase estética — la plantilla
+seguía siendo el placeholder mínimo del scaffold inicial.
+
+- [x] `dnorte-theme`: sistema de diseño ampliado en `app.scss` — tokens de color
+      (superficie, texto atenuado, enlaces visitados), tipografía (titulares en serif
+      del sistema, cuerpo en sans del sistema — deliberadamente sin cargar fuentes
+      externas mientras no haya guía de marca real que lo exija), escala de espaciado,
+      radios/sombras. El color de acento (`--color-accent`) sigue siendo un
+      placeholder explícito a la espera de la marca real de Diario del Norte.
+- [x] `dnorte-theme`: cabecera rediseñada — barra superior con fecha estilo cabecera
+      de diario, masthead con línea de acento, navegación con estados hover/focus,
+      **botón visible para alternar modo oscuro** (antes solo se detectaba
+      automático por preferencia del sistema — sin control manual para el usuario) y
+      **menú móvil con botón hamburguesa** (antes el header no era usable en pantallas
+      angostas: los enlaces de navegación no tenían forma de mostrarse/ocultarse).
+- [x] `dnorte-theme`: pie de página con layout de columnas y jerarquía tipográfica
+      propia.
+- [x] `dnorte-theme`: `assets/js/app.js` — interacción del botón de tema (sincroniza
+      `aria-label` con el estado real al cargar) y del menú móvil.
+- [x] Dos bugs de CSS reales encontrados en la propia verificación visual, no por
+      revisión de código: `text-transform: capitalize` en la fecha de cabecera
+      capitalizaba cada palabra ("De August De"), rompiendo las reglas de
+      capitalización del español (corregido quitándolo); `.header-controls` sin
+      `flex-wrap` combinado con el `<nav>` en `flex-basis: 100%` comprimía el botón
+      de menú móvil hasta volverlo invisible (corregido con `flex-wrap: wrap` +
+      `flex-shrink: 0` + tamaño explícito del ícono SVG, que tampoco lo tenía).
+- [x] `composer run check` (3 pruebas, sin cambios de lógica PHP nueva que testear —
+      esta versión es principalmente CSS/JS) en verde en `dnorte-theme`.
+- [x] Verificado en el WordPress real de desarrollo, en escritorio y móvil (375px),
+      claro y oscuro, con un menú real asignado: masthead, navegación, toggle de tema
+      y menú móvil funcionando (confirmado el toggle disparando el evento `click`
+      real del botón — no solo revisión visual), `debug.log` vacío.
+
 ## Próximas versiones (por decidir)
 
-Alcance a definir según necesidad real de Diario del Norte, no por paridad con ND
-Platform (ver `docs/handoff-nd-platform.md` §8). Candidatos, en orden probable de
-prioridad: sitemap de Google News/Discover, y solo después evaluar publicidad propia,
-analítica propia, IA, búsqueda interna y workflow editorial — cada uno preguntando
-primero si un plugin ya probado o una función nativa de WordPress lo resuelve sin
-construir nada nuevo.
+Fase estética (continuación): bloques de portada (hero, destacados, últimas noticias)
+con contenido real vía `HomeContentProvider` + `WP_Query`; plantilla de artículo con
+tipografía editorial y breadcrumbs visibles (el schema ya existe desde alpha.4, falta
+mostrarlo en el HTML); plantilla de archivo/categoría. Alcance técnico restante, no por
+paridad con ND Platform (ver `docs/handoff-nd-platform.md` §8): sitemap de Google
+News/Discover, y solo después evaluar publicidad propia, analítica propia, IA, búsqueda
+interna y workflow editorial.
