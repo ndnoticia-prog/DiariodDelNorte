@@ -2,6 +2,32 @@
 
 Formato basado en [Keep a Changelog](https://keepachangelog.com/es-ES/1.0.0/).
 
+## [Unreleased] — v0.1.0-alpha.5
+
+### Added
+
+- `dnorte-core`: `Media\ModernFormatConverter` — filtro nativo
+  `image_editor_output_format`, formato preferido configurable (`config/media.php`),
+  detección real de soporte GD, `avif` cae a `webp` si no hay soporte.
+- `dnorte-core`: `Media\FeaturedImageSize` — tamaño `dnorte-featured` (1200×675,
+  requisito de Discover), registrado en `after_setup_theme`.
+- `dnorte-core`: `Providers\MediaServiceProvider`, registrado por defecto en
+  `Application`. `Seo\Context\SeoContextResolver` actualizado para preferir
+  `dnorte-featured` con fallback a `large`.
+- `patchwork.json` — necesario para que Brain Monkey intercepte `function_exists()`
+  en las pruebas de `ModernFormatConverter`.
+- 8 pruebas unitarias nuevas (63 en total en `dnorte-core`).
+
+### Verified
+
+- `composer run check` (63 pruebas) y `composer test:integration` (23 pruebas) en
+  verde.
+- Imagen real subida vía WP-CLI sobre el WordPress de desarrollo: metadata del
+  adjunto confirma tamaños intermedios generados en `.webp` (`mime-type:
+  image/webp`), Biblioteca de medios renderizando sin errores, `debug.log` vacío.
+  `dnorte-featured` correctamente omitido para una fuente menor a 1200×675
+  (comportamiento nativo esperado de WordPress, no un bug).
+
 ## [Unreleased] — v0.1.0-alpha.4
 
 ### Added

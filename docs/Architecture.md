@@ -183,8 +183,31 @@ mismo propósito que `GET /wp-json/nd/v1/system/status` en ND Platform.
   porque solo reciben datos ya resueltos (un `SeoContext` o una lista de ítems), nunca
   tocan `WP_Post` directamente.
 
+## Multimedia: qué reimplementa `dnorte-core` y qué reutiliza de WordPress core
+
+- **Responsive images (`srcset`/`sizes`) y lazy load**: no se reimplementan.
+  WordPress core ya los genera automáticamente desde la 4.4 y la 5.5
+  respectivamente.
+- **WebP/AVIF sí es nuevo**: `Media\ModernFormatConverter` usa el filtro nativo
+  `image_editor_output_format` (WordPress 5.8+) para que los tamaños intermedios de
+  JPEG/PNG subidos se generen en un formato moderno, comprobando en tiempo real si el
+  GD del servidor soporta `imagewebp()`/`imageavif()` antes de activarlo — degrada a no
+  convertir si no hay soporte, nunca fuerza un formato no disponible. El formato
+  preferido (`webp`/`avif`/desactivado) es configurable (`config/media.php`,
+  `media.modern_format`); `avif` cae a `webp` automáticamente si el servidor no
+  soporta AVIF.
+- **Tamaño de imagen destacada** (`Media\FeaturedImageSize`, `dnorte-featured`,
+  1200×675): registrado en `after_setup_theme`, cumple el requisito de Google Discover
+  (imagen ≥1200px de ancho). `Seo\Context\SeoContextResolver` referencia ese nombre de
+  tamaño como **cadena literal**, no como dependencia de clase — mismo patrón de bajo
+  acoplamiento que `nd-seo`/`nd-discover` en ND Platform. Si el post no tiene una
+  versión de ese tamaño (fuente más pequeña que 1200×675, WordPress no la genera para
+  evitar ampliar-y-recortar con mala calidad), `get_the_post_thumbnail_url()` devuelve
+  `false` y se cae explícitamente a `large`, nunca a un fatal error ni a una imagen
+  rota.
+
 ## Qué falta por decidir/documentar aquí
 
-A medida que se añadan más módulos (caché, seguridad, multimedia, ...) documentar en
-este mismo fichero las decisiones de diseño y qué se reimplementa vs. qué se reutiliza
-de WordPress core, siguiendo el mismo criterio que `handoff-nd-platform.md` §4.
+A medida que se añadan más módulos (caché, seguridad, ...) documentar en este mismo
+fichero las decisiones de diseño y qué se reimplementa vs. qué se reutiliza de
+WordPress core, siguiendo el mismo criterio que `handoff-nd-platform.md` §4.

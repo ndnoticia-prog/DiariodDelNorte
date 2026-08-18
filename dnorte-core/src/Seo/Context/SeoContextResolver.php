@@ -37,11 +37,19 @@ final class SeoContextResolver {
 		return $this->forHome();
 	}
 
+	// Tamaño registrado por Media\FeaturedImageSize (1200x675, requisito de Discover)
+	// — referenciado como cadena literal, no como dependencia de clase, para no
+	// acoplar este resolver al módulo de multimedia. Si el tamaño no existe (o el
+	// post no tiene imagen destacada de ese tamaño), get_the_post_thumbnail_url()
+	// devuelve false y se cae a 'large' explícitamente, sin fatal error. Mismo
+	// patrón que ND Platform entre nd-seo y nd-discover.
+	private const FEATURED_IMAGE_SIZE = 'dnorte-featured';
+
 	private function forSingular(): SeoContext {
 		$queried = get_queried_object();
 		$post    = $queried instanceof WP_Post ? $queried : null;
 
-		$image = $post !== null ? get_the_post_thumbnail_url( $post, 'large' ) : false;
+		$image = $post !== null ? $this->featuredImageUrl( $post ) : false;
 
 		return new SeoContext(
 			title: $post !== null ? get_the_title( $post ) : wp_get_document_title(),
@@ -49,7 +57,7 @@ final class SeoContextResolver {
 			canonicalUrl: $post !== null ? (string) get_permalink( $post ) : $this->currentUrl(),
 			noindex: false,
 			ogType: $post !== null && $post->post_type === 'post' ? 'article' : 'website',
-			imageUrl: $image !== false ? (string) $image : null,
+			imageUrl: $image !== false ? $image : null,
 			post: $post
 		);
 	}
@@ -97,6 +105,12 @@ final class SeoContextResolver {
 			ogType: 'website',
 			imageUrl: null
 		);
+	}
+
+	private function featuredImageUrl( WP_Post $post ): string|false {
+		$image = get_the_post_thumbnail_url( $post, self::FEATURED_IMAGE_SIZE );
+
+		return $image !== false ? $image : get_the_post_thumbnail_url( $post, 'large' );
 	}
 
 	private function excerptFor( WP_Post $post ): string {

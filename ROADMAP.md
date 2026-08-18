@@ -150,11 +150,42 @@ verifica además contra un WordPress real en el navegador antes de cerrarse.
       `BreadcrumbList` verificado en un artículo real) y `robots.txt` con la directiva
       `Sitemap:` funcionando, `debug.log` vacío.
 
+## v0.1.0-alpha.5 — Multimedia
+
+- [x] `dnorte-core`: `Media\ModernFormatConverter` — filtro nativo
+      `image_editor_output_format` (WordPress 5.8+), formato preferido configurable
+      (`config/media.php`, `media.modern_format`: `webp`/`avif`/desactivado), `avif`
+      cae a `webp` si el servidor no lo soporta, detección real de soporte GD
+      (`function_exists('imagewebp'/'imageavif')`).
+- [x] `dnorte-core`: `Media\FeaturedImageSize` — tamaño `dnorte-featured` (1200×675,
+      requisito de Google Discover), registrado en `after_setup_theme`.
+      `Seo\Context\SeoContextResolver` actualizado para preferirlo (con fallback
+      explícito a `large` si no existe una versión de ese tamaño para el post).
+- [x] `dnorte-core`: `Providers\MediaServiceProvider`, registrado por defecto en
+      `Application`.
+- [x] `patchwork.json` (`redefinable-internals: function_exists`) — necesario para que
+      Brain Monkey pueda interceptar `function_exists()` en las pruebas unitarias del
+      conversor de formato.
+- [x] 8 pruebas unitarias nuevas (`ModernFormatConverter`, `FeaturedImageSize`,
+      `MediaServiceProvider`) — 63 en total en `dnorte-core`. Sin pruebas de
+      integración adicionales: `ModernFormatConverter`/`FeaturedImageSize` no
+      dependen de `WP_Post` (se cubren completas con Brain Monkey); el
+      comportamiento del tamaño de imagen destacada ya lo ejercita
+      `SeoContextResolverTest` desde alpha.4.
+- [x] `composer run check` (63 pruebas) y `composer test:integration` (23 pruebas) en
+      verde.
+- [x] Verificado en el WordPress real de desarrollo: imagen real subida vía WP-CLI,
+      metadata del adjunto confirma tamaños intermedios generados en `.webp`
+      (`mime-type: image/webp`), Biblioteca de medios renderizando el `.webp` sin
+      errores, `debug.log` vacío. El tamaño `dnorte-featured` correctamente no se
+      genera para una fuente más pequeña que 1200×675 (WordPress evita
+      ampliar-y-recortar) — comportamiento esperado, no un bug.
+
 ## Próximas versiones (por decidir)
 
 Alcance a definir según necesidad real de Diario del Norte, no por paridad con ND
 Platform (ver `docs/handoff-nd-platform.md` §8). Candidatos, en orden probable de
-prioridad: multimedia (WebP/AVIF, imagen destacada), sitemap de Google News/Discover, y
-solo después evaluar publicidad propia, analítica propia, IA, búsqueda interna y
-workflow editorial — cada uno preguntando primero si un plugin ya probado o una función
-nativa de WordPress lo resuelve sin construir nada nuevo.
+prioridad: sitemap de Google News/Discover, y solo después evaluar publicidad propia,
+analítica propia, IA, búsqueda interna y workflow editorial — cada uno preguntando
+primero si un plugin ya probado o una función nativa de WordPress lo resuelve sin
+construir nada nuevo.
