@@ -91,5 +91,16 @@ register_activation_hook(
 		$installer = new \DNorteCore\Installer\Installer( $migrator );
 
 		$installer->install( array(), DNORTE_CORE_VERSION );
+
+		// Intento de mejor esfuerzo: la regla de rewrite de /sitemap-news.xml se
+		// registra en 'init' (SeoServiceProvider), un hook que corre DESPUÉS de este
+		// callback de activación (limitación conocida de WordPress, no de este
+		// plugin) — así que este flush casi siempre ocurre antes de que la regla
+		// nueva exista y no la incluye. Si /sitemap-news.xml da 404 justo tras
+		// activar, basta con ir a Ajustes → Enlaces permanentes y pulsar "Guardar
+		// cambios" una vez (WordPress vuelve a generar las reglas con el sitemap de
+		// noticias ya registrado). Mismo caso ya documentado en ND Platform para
+		// el mismo tipo de sitemap.
+		flush_rewrite_rules();
 	}
 );

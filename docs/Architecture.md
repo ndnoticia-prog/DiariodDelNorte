@@ -158,9 +158,25 @@ mismo propósito que `GET /wp-json/nd/v1/system/status` en ND Platform.
   cuenta, para que no puedan divergir entre sí.
 - **Sitemap general**: no se reimplementa. WordPress core expone `wp-sitemap.xml` (y
   sus sub-sitemaps) desde la 5.5; `Seo\Robots\RobotsTxtBuilder` solo le añade la
-  directiva `Sitemap:` a `robots.txt`. El sitemap específico de Google News (que sí
-  requeriría reimplementación, por el namespace `news:` y la ventana de tiempo corta)
-  queda fuera de alcance por ahora — ver "Próximas versiones" en `ROADMAP.md`.
+  directiva `Sitemap:` a `robots.txt`.
+- **Sitemap de Google News** (`Seo\Sitemap\NewsSitemapController`, sirviendo
+  `/sitemap-news.xml`) — este sí es nuevo: WordPress core no lo provee, porque usa un
+  espacio de nombres XML distinto (`news:`) y solo incluye artículos de las últimas
+  horas (`config/seo.php`, `seo.news_sitemap.window_hours`, 48h por defecto — límite
+  real del formato, no una preferencia editorial). `render()` construye el XML a
+  partir de datos ya resueltos (`list<array{url, title, published_at}>`, nunca toca
+  `WP_Post` directamente) con `XMLWriter` — así se cubre con pruebas unitarias
+  (Brain Monkey) igual que `SchemaOutput`, sin necesitar WordPress real; solo
+  `recentArticleData()` (la consulta a `WP_Query`) necesita integración. Límite de
+  1000 URLs por sitemap, el máximo real que acepta Google News.
+- **Rewrite rule del sitemap de noticias y activación**: como es una limitación
+  conocida de WordPress (las reglas de rewrite añadidas dentro del propio hook de
+  activación no llegan a tiempo para el `flush_rewrite_rules()` que corre en la misma
+  petición, porque `init` —donde `SeoServiceProvider` registra la regla— ya se disparó
+  antes de que se ejecute el hook de activación), si `/sitemap-news.xml` da 404 justo
+  tras activar `dnorte-core`, basta con ir a Ajustes → Enlaces permanentes y pulsar
+  "Guardar cambios" una vez. Mismo caso ya documentado en ND Platform para el mismo
+  tipo de sitemap.
 - **JSON-LD como un único `@graph`** (`Seo\Schema\SchemaOutput`), no un `<script>` por
   tipo, codificado con `JSON_HEX_TAG | JSON_HEX_AMP`: sin esos flags, un título de
   artículo que contuviera literalmente `</script>` cerraría el bloque e inyectaría
@@ -172,16 +188,17 @@ mismo propósito que `GET /wp-json/nd/v1/system/status` en ND Platform.
   archivo (correcto para el `<title>` SEO, que sí usa `get_the_archive_title()` vía
   `SeoContextResolver`, pero no para una miga de pan). Encontrado por la prueba de
   integración de `BreadcrumbBuilder`, no por revisión manual.
-- **Por qué `SeoContextResolver`/`BreadcrumbBuilder`/`ArticleSchema` sí tienen pruebas
-  de integración (y no solo unitarias)**: dependen de `WP_Post`/`WP_Term`/consultas
-  reales (`get_queried_object()`, `get_the_category()`, ...) — misma limitación que
+- **Por qué `SeoContextResolver`/`BreadcrumbBuilder`/`ArticleSchema`/
+  `NewsSitemapController::recentArticleData()` sí tienen pruebas de integración (y no
+  solo unitarias)**: dependen de `WP_Post`/`WP_Term`/`WP_Query` reales
+  (`get_queried_object()`, `get_the_category()`, ...) — misma limitación que
   `DatabaseManager`/`Migrator`/`Installer` (ver más arriba), cubierta ahora que la
   infraestructura de integración ya existe desde `v0.1.0-alpha.3`. Los constructores
   puros (`RobotsMetaBuilder`, `OpenGraphBuilder`, `TwitterCardBuilder`,
   `MetaTagsRenderer`, `OrganizationSchema`, `WebSiteSchema`, `BreadcrumbListSchema`,
-  `SchemaOutput`, `RobotsTxtBuilder`) sí se cubren con pruebas unitarias (Brain Monkey),
-  porque solo reciben datos ya resueltos (un `SeoContext` o una lista de ítems), nunca
-  tocan `WP_Post` directamente.
+  `SchemaOutput`, `RobotsTxtBuilder`, `NewsSitemapController::render()`) sí se cubren
+  con pruebas unitarias (Brain Monkey), porque solo reciben datos ya resueltos (un
+  `SeoContext` o una lista de ítems), nunca tocan `WP_Post` directamente.
 
 ## Multimedia: qué reimplementa `dnorte-core` y qué reutiliza de WordPress core
 

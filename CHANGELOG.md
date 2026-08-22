@@ -2,6 +2,28 @@
 
 Formato basado en [Keep a Changelog](https://keepachangelog.com/es-ES/1.0.0/).
 
+## [Unreleased] — v0.1.0-alpha.8
+
+### Added
+
+- `dnorte-core`: `Seo\Sitemap\NewsSitemapController` — sirve `/sitemap-news.xml` con
+  namespace `news:`, artículos de las últimas 48h (`config/seo.php`), límite de 1000
+  URLs. `render()` puro (`XMLWriter`) separado de `recentArticleData()` (la parte que
+  toca `WP_Query`/`WP_Post`).
+- `dnorte-core`: `RobotsTxtBuilder` añade también la directiva `Sitemap:` de
+  `/sitemap-news.xml`.
+- `dnorte-core`: `SeoServiceProvider` registra la rewrite rule, el query var y el
+  renderizado del sitemap de noticias; `dnorte-core.php` intenta
+  `flush_rewrite_rules()` en la activación (mejor esfuerzo).
+- 4 pruebas unitarias + 4 de integración nuevas (67 + 27 en total en `dnorte-core`).
+
+### Verified
+
+- `composer run check` y `composer test:integration` en verde.
+- WordPress real de desarrollo: `/sitemap-news.xml` vacío sin artículos recientes,
+  poblado correctamente tras publicar uno nuevo, `robots.txt` con ambas directivas
+  `Sitemap:`, `debug.log` vacío.
+
 ## [Unreleased] — v0.1.0-alpha.7
 
 ### Added

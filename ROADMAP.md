@@ -258,12 +258,38 @@ seguía siendo el placeholder mínimo del scaffold inicial.
       categoría con título limpio — `debug.log` vacío en todo el recorrido, incluido
       el aviso de `comments.php` que ya no aparece.
 
+## v0.1.0-alpha.8 — Sitemap de Google News
+
+- [x] `dnorte-core`: `Seo\Sitemap\NewsSitemapController` — sirve `/sitemap-news.xml`
+      con namespace `news:`, artículos publicados en las últimas 48h (configurable,
+      `config/seo.php`), límite de 1000 URLs (el máximo real de Google News).
+      `render()` puro (XML a partir de datos ya resueltos, `XMLWriter`) separado de
+      `recentArticleData()` (la única parte que toca `WP_Query`/`WP_Post`).
+- [x] `dnorte-core`: `Seo\Robots\RobotsTxtBuilder` ahora añade también la directiva
+      `Sitemap:` de `/sitemap-news.xml` en `robots.txt`, junto a la de
+      `wp-sitemap.xml`.
+- [x] `dnorte-core`: `SeoServiceProvider` registra la rewrite rule (`init`), el query
+      var (`query_vars`) y el renderizado (`parse_query`, prioridad 1) del sitemap de
+      noticias. `dnorte-core.php` intenta `flush_rewrite_rules()` en la activación
+      (mejor esfuerzo — mismo caveat de orden de hooks ya documentado en ND Platform:
+      puede no alcanzar a incluir la regla nueva, basta con guardar permalinks una
+      vez si `/sitemap-news.xml` da 404 justo tras activar).
+- [x] 4 pruebas unitarias nuevas para `NewsSitemapController::render()` (incluye
+      escapado de un título con `<script>`) y 4 de integración para
+      `recentArticleData()`/`render()` de punta a punta (67 unitarias + 27 de
+      integración en total en `dnorte-core`).
+- [x] `composer run check` y `composer test:integration` en verde.
+- [x] Verificado en el WordPress real de desarrollo: `/sitemap-news.xml` vacío sin
+      artículos recientes, poblado correctamente tras publicar uno nuevo (`<loc>`,
+      `<news:name>`, `<news:language>`, `<news:publication_date>`, `<news:title>`
+      todos presentes), `robots.txt` con ambas directivas `Sitemap:`, `debug.log`
+      vacío.
+
 ## Próximas versiones (por decidir)
 
 Alcance técnico restante, no por paridad con ND Platform (ver
-`docs/handoff-nd-platform.md` §8): sitemap de Google News/Discover, y solo después
-evaluar publicidad propia, analítica propia, IA, búsqueda interna y workflow
-editorial — cada uno preguntando primero si un plugin ya probado o una función nativa
-de WordPress lo resuelve sin construir nada nuevo. En lo estético: guía de marca real
-de Diario del Norte (sustituir el color de acento placeholder), y posible logo/isotipo
-en vez de branding solo textual.
+`docs/handoff-nd-platform.md` §8): publicidad propia, analítica propia, IA, búsqueda
+interna y workflow editorial — cada uno preguntando primero si un plugin ya probado o
+una función nativa de WordPress lo resuelve sin construir nada nuevo. En lo estético:
+guía de marca real de Diario del Norte (sustituir el color de acento placeholder), y
+posible logo/isotipo en vez de branding solo textual.

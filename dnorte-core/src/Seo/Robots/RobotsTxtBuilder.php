@@ -1,9 +1,10 @@
 <?php
 /**
- * Le añade la directiva Sitemap: a robots.txt. No reimplementa el sitemap general:
+ * Le añade las directivas Sitemap: a robots.txt. No reimplementa el sitemap general:
  * WordPress core expone wp-sitemap.xml (y sus sub-sitemaps) desde la 5.5, mantenido y
  * con el protocolo de sitemaps.org correctamente implementado — reescribirlo sería
- * duplicar código sin necesidad. Mismo criterio que ND Platform.
+ * duplicar código sin necesidad. El sitemap de noticias (sitemap-news.xml) sí es
+ * propio — ver Sitemap\NewsSitemapController. Mismo criterio que ND Platform.
  *
  * @package DNorteCore\Seo\Robots
  */
@@ -19,12 +20,17 @@ final class RobotsTxtBuilder {
 			return $output;
 		}
 
-		$sitemapLine = 'Sitemap: ' . home_url( '/wp-sitemap.xml' );
+		$lines = array(
+			'Sitemap: ' . home_url( '/wp-sitemap.xml' ),
+			'Sitemap: ' . home_url( '/sitemap-news.xml' ),
+		);
 
-		if ( str_contains( $output, $sitemapLine ) ) {
-			return $output;
+		foreach ( $lines as $line ) {
+			if ( ! str_contains( $output, $line ) ) {
+				$output = rtrim( $output ) . "\n" . $line . "\n";
+			}
 		}
 
-		return rtrim( $output ) . "\n" . $sitemapLine . "\n";
+		return $output;
 	}
 }
