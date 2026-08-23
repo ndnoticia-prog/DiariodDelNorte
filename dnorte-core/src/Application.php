@@ -23,6 +23,7 @@ use DNorteCore\Container\Container;
 use DNorteCore\Events\EventDispatcher;
 use DNorteCore\Hooks\HookManager;
 use DNorteCore\Providers\AdminMenuServiceProvider;
+use DNorteCore\Providers\AnalyticsServiceProvider;
 use DNorteCore\Providers\CoreServiceProvider;
 use DNorteCore\Providers\MediaServiceProvider;
 use DNorteCore\Providers\RestApiServiceProvider;
@@ -141,6 +142,7 @@ final class Application {
 			MediaServiceProvider::class,
 			WorkflowServiceProvider::class,
 			SearchServiceProvider::class,
+			AnalyticsServiceProvider::class,
 		);
 
 		/** @var list<class-string<ServiceProvider>> $configured */

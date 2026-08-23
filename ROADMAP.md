@@ -359,12 +359,44 @@ seguía siendo el placeholder mínimo del scaffold inicial.
       artículo relevante, estado vacío correcto, endpoint REST confirmado con
       `curl`, `debug.log` vacío en todo el recorrido.
 
+## v0.1.0-alpha.11 — Analítica propia
+
+- [x] `dnorte-core`: módulo de analítica propia — "qué se lee", no "quién lee".
+      `Analytics\Pageviews\CreatePageviewsTable` (tabla `dnorte_pageviews`: solo
+      `post_id`/`referrer_host`/`viewed_at`, sin IP/user-agent/identificador de
+      visitante). `Analytics\PageviewBeaconRenderer` (`wp_footer`, sin tocar el
+      tema) emite un beacon `navigator.sendBeacon()`, excluyendo al equipo
+      editorial (`current_user_can('edit_posts')`).
+      `POST /wp-json/dnorte/v1/analytics/pageview` (`Analytics\PageviewController`)
+      registra solo artículos publicados.
+- [x] `dnorte-core`: `Analytics\PageviewPurger` — purga diaria por WP-Cron de filas
+      más antiguas que `analytics.retention_days` (90 por defecto).
+- [x] `dnorte-core`: panel "Analítica" (`Analytics\AnalyticsAdminPage`, solo
+      lectura) — vistas totales 24h/7d/30d y artículos más vistos en
+      `analytics.top_articles_window_days` (7 días).
+- [x] 8 pruebas unitarias nuevas (99 en total) y 8 de integración nuevas (51 en
+      total). `composer run check` y `composer test:integration` en verde.
+- [x] **Bug real encontrado y corregido — primer caso real de dos módulos de admin
+      distintos desde `v0.1.0-alpha.9`**: `Admin\AdminPage`/
+      `Providers\AdminMenuServiceProvider` anidaban cualquier página nueva bajo la
+      de menor `position` de TODA la plataforma, sin importar el módulo —
+      invisible con un solo panel (Turnos), habría anidado "Analítica" bajo
+      "Turnos" sin relación real entre ambos. Corregido con un `parentSlug`
+      explícito por página (`null` = nivel superior propio) en vez de inferirlo
+      por posición. Prueba de regresión añadida. Ver "Fixed" en `CHANGELOG.md`.
+- [x] Verificado en el WordPress real de desarrollo: "Analítica" como su propia
+      entrada de nivel superior (no anidada bajo "Turnos"); beacon real confirmado
+      en el HTML servido a un visitante anónimo; `POST` simulado registra la fila
+      con solo el dominio del referente; panel muestra vistas totales y el
+      artículo correcto en "Artículos más vistos"; `debug.log` vacío en todo el
+      recorrido.
+
 ## Próximas versiones (por decidir)
 
 Alcance técnico restante, confirmado explícitamente por el cliente: publicidad
-propia, analítica propia, IA — cada uno preguntando primero si un plugin ya probado
-o una función nativa de WordPress lo resuelve sin construir nada nuevo (ver
-`docs/handoff-nd-platform.md` §8). El workflow editorial, el panel de turnos y la
-búsqueda interna ya se cerraron (alpha.9–alpha.10). En lo estético: guía de marca
-real de Diario del Norte (sustituir el color de acento placeholder), y posible
-logo/isotipo en vez de branding solo textual.
+propia, IA — cada uno preguntando primero si un plugin ya probado o una función
+nativa de WordPress lo resuelve sin construir nada nuevo (ver
+`docs/handoff-nd-platform.md` §8). El workflow editorial, el panel de turnos, la
+búsqueda interna y la analítica propia ya se cerraron (alpha.9–alpha.11). En lo
+estético: guía de marca real de Diario del Norte (sustituir el color de acento
+placeholder), y posible logo/isotipo en vez de branding solo textual.

@@ -15,6 +15,7 @@ declare(strict_types=1);
 
 namespace DNorteCore\Installer;
 
+use DNorteCore\Analytics\Pageviews\CreatePageviewsTable;
 use DNorteCore\Migrator\Contracts\Migration;
 use DNorteCore\Search\Fulltext\CreateSearchFulltextIndex;
 use DNorteCore\Workflow\Notes\CreateEditorialNotesTable;
@@ -30,6 +31,7 @@ final class MigrationRegistry {
 			new CreateEditorialNotesTable(),
 			new CreateShiftsTable(),
 			new CreateSearchFulltextIndex(),
+			new CreatePageviewsTable(),
 		);
 	}
 }

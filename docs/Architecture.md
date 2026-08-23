@@ -257,15 +257,29 @@ Mismo patrón que providers/REST (ver "Extender el registro de providers" más a
 filtro público `dnorte_core/admin_pages` + contrato `Admin\Contracts\RegistersAdminPages`
 + value object `Admin\AdminPage`. `Providers\AdminMenuServiceProvider` (enganchado a
 `admin_menu`) resuelve cada clase del filtro vía el `Container`, junta todos los
-`AdminPage` devueltos y los ordena por `position`; el primero se registra con
-`add_menu_page()` y el resto como `add_submenu_page()` bajo el slug del primero. Un
-módulo nuevo se suma sin que `dnorte-core` tenga que conocer su existencia, igual que
-`dnorte_core/rest_controllers`.
+`AdminPage` devueltos y los ordena por `position`. Un módulo nuevo se suma sin que
+`dnorte-core` tenga que conocer su existencia, igual que `dnorte_core/rest_controllers`.
 
 `AdminPage->render` se tipa como `Closure`, no `callable`: `callable` no es un tipo de
 propiedad legal en PHP (`Readonly property must have type` es un error fatal, no un
 aviso), así que el constructor convierte el `callable` recibido con
 `Closure::fromCallable()`.
+
+**`AdminPage->parentSlug` decide el nivel superior — corregido en v0.1.0-alpha.11**:
+la versión original (única hasta esa versión, cuando solo existía el módulo de
+Turnos) elegía la página de **menor `position` de toda la plataforma** como la
+única entrada de nivel superior y anidaba cualquier otra página nueva debajo de
+esa, sin importar de qué módulo viniera — invisible mientras solo había un único
+`RegistersAdminPages` registrado, pero habría anidado "Analítica" bajo "Turnos"
+sin ninguna relación real entre ambos en cuanto se sumó el segundo módulo con
+panel propio. Corregido dándole a cada `AdminPage` su propio `parentSlug` explícito:
+`null` (por defecto) la vuelve su propia entrada de nivel superior
+(`add_menu_page()`); un slug la anida como `add_submenu_page()` bajo esa página
+concreta — nunca inferido por posición. `position` se conserva solo para el orden
+relativo entre páginas de nivel superior o entre submenús que comparten el mismo
+`parentSlug`, no para decidir cuál se vuelve el nivel superior. Ver
+`AdminMenuServiceProviderTest::test_register_menu_gives_two_unrelated_modules_their_own_top_level_entry`
+(prueba de regresión) y "Fixed" en `CHANGELOG.md`.
 
 ```php
 add_filter('dnorte_core/admin_pages', function (array $pages): array {
@@ -364,9 +378,51 @@ commit.
   lógica. Términos más cortos que `search.min_query_length` (`config/search.php`)
   se responden con una lista vacía sin tocar la base de datos.
 
+## Analítica propia: qué mide, qué NO mide, y por qué
+
+Pensada para responder "¿qué se lee?", no "¿quién lee?" — una decisión de diseño
+deliberada, no una limitación técnica temporal:
+
+- **`dnorte_pageviews`** (`Analytics\Pageviews\CreatePageviewsTable`) guarda
+  únicamente `post_id`, `referrer_host` (solo el dominio del referente — nunca la
+  URL completa con parámetros de terceros, ver `PageviewController::extractHost()`)
+  y `viewed_at`. Sin IP, sin user-agent, sin ninguna cookie ni identificador de
+  visitante — no hay forma de reconstruir el recorrido de una persona concreta a
+  partir de esta tabla. Es la razón por la que "visitantes únicos" no existe en el
+  panel v1: medirlo de forma honesta exige algún tipo de identificador
+  (aunque sea un hash rotativo), y no se justificaba para la primera versión.
+- **`Analytics\PageviewBeaconRenderer`** (enganchado a `wp_footer`, sin tocar el
+  tema) emite un `<script>` mínimo con `navigator.sendBeacon()` — deliberadamente
+  un beacon del navegador, no un `INSERT` directo en el `render()` de PHP: así una
+  vista servida desde una caché de página (si se añade en el futuro) se sigue
+  contando, porque la ejecuta el navegador de cada visitante, no el servidor en el
+  momento de generar el HTML.
+- **Excluye al propio equipo editorial**: `PageviewBeaconRenderer::shouldRecord()`
+  no emite el beacon si `current_user_can('edit_posts')` — sin esto, cada
+  vista previa o revisión de un artículo por el equipo contaminaría las
+  estadísticas de lectura real.
+- **Sin detección de bots/crawlers** (limitación de v1, no resuelta): un rastreador
+  que ejecute JavaScript (poco común, pero existe) se contaría igual que una
+  persona real. Aceptable para una primera versión; revisar si el volumen de
+  tráfico automatizado resulta significativo.
+- **`Analytics\PageviewPurger`**: WP-Cron diario (`dnorte_core/analytics_purge`,
+  programado en `init` si no existe ya, ver `AnalyticsServiceProvider::schedulePurge()`)
+  borra filas más antiguas que `analytics.retention_days` (90 por defecto) — no es
+  un requisito de privacidad estricto (no hay datos personales que purgar), es
+  higiene de tamaño de tabla.
+- **`Analytics\AnalyticsAdminPage`**: panel de solo lectura (sin ningún formulario
+  que verificar con nonce, a diferencia del panel de turnos) — vistas totales
+  24h/7d/30d y los artículos más vistos en `analytics.top_articles_window_days`
+  (7 días por defecto).
+- **`GET /wp-json/dnorte/v1/search`** e internal search comparten el mismo criterio
+  de "reutilizar `WP_Query` en vez de reinventar consultas": aquí, en cambio, sí
+  hace falta una tabla y consultas propias (`PageviewRepository`), porque
+  WordPress core no tiene ningún concepto nativo de "cuántas veces se vio este
+  post".
+
 ## Qué falta por decidir/documentar aquí
 
-A medida que se añadan más módulos (publicidad propia, analítica propia, IA,
-búsqueda interna, caché, seguridad, ...) documentar en este mismo fichero las
-decisiones de diseño y qué se reimplementa vs. qué se reutiliza de WordPress core,
-siguiendo el mismo criterio que `handoff-nd-platform.md` §4.
+A medida que se añadan más módulos (publicidad propia, IA, caché, seguridad, ...)
+documentar en este mismo fichero las decisiones de diseño y qué se reimplementa
+vs. qué se reutiliza de WordPress core, siguiendo el mismo criterio que
+`handoff-nd-platform.md` §4.

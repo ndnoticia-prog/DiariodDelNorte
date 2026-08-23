@@ -5,9 +5,11 @@
  * `dnorte_core/providers`/`dnorte_core/rest_controllers`: un módulo se suma a la
  * lista sin que dnorte-core tenga que conocer su existencia.
  *
- * La página con la `position` más baja fija el slug del menú de nivel superior
- * (`add_menu_page()`) en vez de crear una página "índice" separada — mismo patrón
- * que WooCommerce/Yoast SEO, evita un submenú duplicado/huérfano.
+ * Cada AdminPage declara su propio `parentSlug` (`null` = su propia entrada de
+ * nivel superior) — corregido en v0.1.0-alpha.11: la versión anterior elegía la
+ * página de menor `position` de TODA la plataforma como el único nivel superior y
+ * anidaba cualquier otra página nueva debajo, sin importar de qué módulo viniera
+ * (ver el docblock de AdminPage::$parentSlug y "Fixed" en CHANGELOG.md).
  *
  * @package DNorteCore\Providers
  */
@@ -32,30 +34,24 @@ final class AdminMenuServiceProvider extends ServiceProvider {
 	public function registerMenu(): void {
 		$pages = $this->resolvePages();
 
-		if ( $pages === array() ) {
-			return;
-		}
-
 		usort( $pages, static fn ( AdminPage $a, AdminPage $b ): int => $a->position <=> $b->position );
 
-		$topLevel = $pages[0];
+		foreach ( $pages as $page ) {
+			if ( $page->parentSlug === null ) {
+				add_menu_page(
+					$page->pageTitle,
+					$page->menuTitle,
+					$page->capability,
+					$page->slug,
+					$page->render,
+					$page->icon
+				);
 
-		add_menu_page(
-			$topLevel->pageTitle,
-			$topLevel->menuTitle,
-			$topLevel->capability,
-			$topLevel->slug,
-			$topLevel->render,
-			$topLevel->icon
-		);
-
-		foreach ( $pages as $index => $page ) {
-			if ( $index === 0 ) {
 				continue;
 			}
 
 			add_submenu_page(
-				$topLevel->slug,
+				$page->parentSlug,
 				$page->pageTitle,
 				$page->menuTitle,
 				$page->capability,

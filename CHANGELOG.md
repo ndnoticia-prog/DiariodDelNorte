@@ -2,6 +2,62 @@
 
 Formato basado en [Keep a Changelog](https://keepachangelog.com/es-ES/1.0.0/).
 
+## [Unreleased] — v0.1.0-alpha.11
+
+### Added
+
+- `dnorte-core`: módulo de analítica propia — pensado para "qué se lee", no "quién
+  lee" (ver "Analítica propia" en `docs/Architecture.md`). `Analytics\Pageviews\CreatePageviewsTable`
+  crea `dnorte_pageviews` (`post_id`, `referrer_host` — solo el dominio del
+  referente, nunca la URL completa —, `viewed_at`; sin IP, sin user-agent, sin
+  identificador de visitante). `Analytics\PageviewBeaconRenderer` (enganchado a
+  `wp_footer`, sin tocar el tema) emite un `<script>` mínimo con
+  `navigator.sendBeacon()`, excluyendo al propio equipo editorial
+  (`current_user_can('edit_posts')`) para no contaminar las estadísticas con sus
+  propias vistas previas/revisiones. `POST /wp-json/dnorte/v1/analytics/pageview`
+  (`Analytics\PageviewController`) recibe el beacon y solo registra artículos
+  publicados.
+- `dnorte-core`: `Analytics\PageviewPurger` — purga diaria por WP-Cron
+  (`dnorte_core/analytics_purge`) de filas más antiguas que
+  `analytics.retention_days` (90 por defecto); higiene de tamaño de tabla, no un
+  requisito de privacidad (no hay datos personales que purgar).
+- `dnorte-core`: panel "Analítica" (`Analytics\AnalyticsAdminPage`) — vistas
+  totales (24h/7d/30d) y artículos más vistos en `analytics.top_articles_window_days`
+  (7 días por defecto), de solo lectura.
+- `config/analytics.php`: tipos de contenido rastreados, ventana del ranking de
+  más vistos, días de retención.
+- 8 pruebas unitarias nuevas (99 en total en `dnorte-core`, incluida la de
+  regresión de `AdminMenuServiceProvider` de abajo) y 8 de integración nuevas
+  (51 en total).
+
+### Fixed
+
+- **`dnorte-core`: `Admin\AdminPage`/`Providers\AdminMenuServiceProvider` anidaban
+  cualquier página de administración nueva bajo la de menor `position` de TODA la
+  plataforma, sin importar de qué módulo viniera.** Invisible mientras solo
+  existía el panel de Turnos (un único `RegistersAdminPages` registrado); al
+  intentar sumar el panel de Analítica como segundo módulo con página propia,
+  habría quedado anidado bajo "Turnos" sin ninguna relación real entre ambos — el
+  primer caso real de dos módulos de admin distintos desde que se construyó esta
+  infraestructura en `v0.1.0-alpha.9`. Corregido dándole a `AdminPage` un
+  `parentSlug` explícito (`null` = su propia entrada de nivel superior, un slug =
+  submenú de esa página concreta) en vez de inferirlo por posición. Prueba de
+  regresión añadida en `AdminMenuServiceProviderTest`. Ver "Menú de
+  administración" en `docs/Architecture.md`.
+
+### Verified
+
+- `composer run check` en `dnorte-core` (0 errores PHPCS, 0 errores PHPStan nivel
+  máximo, 99 pruebas unitarias) y `composer test:integration` (51 pruebas) en
+  verde.
+- WordPress real de desarrollo: "Analítica" aparece como su propia entrada de
+  nivel superior en el menú (no anidada bajo "Turnos"); artículo real visitado
+  como visitante anónimo emite el beacon correcto (confirmado en el HTML servido);
+  `POST` simulado al endpoint devuelve 204 y registra la fila con solo el dominio
+  del referente (`www.google.com`, nunca la URL completa con el término de
+  búsqueda); panel "Analítica" muestra vistas totales y el artículo correcto en
+  "Artículos más vistos"; `debug.log` vacío en todo el recorrido.
+
 ## [Unreleased] — v0.1.0-alpha.10
 
 ### Added

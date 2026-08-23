@@ -19,17 +19,19 @@ parameters:
                 - src/Workflow/Assignments/ArticleAssignmentRepository.php
                 - src/Workflow/Notes/EditorialNoteRepository.php
                 - src/Workflow/Shifts/ShiftRepository.php
+                - src/Analytics/Pageviews/PageviewRepository.php
         -
-            # Mismo mensaje de phpstan-strict-rules, motivo distinto: WP_Query::get('s')
-            # y WP_REST_Request::get_param('q') devuelven "mixed" porque WordPress no
-            # tipa sus query vars/parámetros — pero el argumento REST ya declara
-            # 'type' => 'string' (InternalSearchController::registerRoutes()) y 's' es
-            # en la práctica siempre una cadena en un WP_Query real. El (string) es un
-            # cast defensivo estándar, no una validación que falte.
-            message: '#Cannot cast mixed to string#'
+            # Mismo mensaje de phpstan-strict-rules, motivo distinto: WP_Query::get('s'),
+            # WP_REST_Request::get_param('q'/'post_id'/'referrer') devuelven "mixed"
+            # porque WordPress no tipa sus query vars/parámetros — pero el argumento REST
+            # ya declara su 'type' (InternalSearchController/PageviewController::registerRoutes())
+            # y en la práctica siempre llega como el escalar esperado. El (string)/(int) es
+            # un cast defensivo estándar, no una validación que falte.
+            message: '#Cannot cast mixed to (string|int)#'
             paths:
                 - src/Search/InternalSearchController.php
                 - src/Search/SearchQueryModifier.php
+                - src/Analytics/PageviewController.php
 
 # szepeviktor/phpstan-wordpress y phpstan/phpstan-strict-rules ya se incluyen
 # automáticamente vía phpstan/extension-installer (composer.json); incluirlos
