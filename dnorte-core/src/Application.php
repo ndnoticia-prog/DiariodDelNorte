@@ -22,11 +22,13 @@ use DNorteCore\Config\Config;
 use DNorteCore\Container\Container;
 use DNorteCore\Events\EventDispatcher;
 use DNorteCore\Hooks\HookManager;
+use DNorteCore\Providers\AdminMenuServiceProvider;
 use DNorteCore\Providers\CoreServiceProvider;
 use DNorteCore\Providers\MediaServiceProvider;
 use DNorteCore\Providers\RestApiServiceProvider;
 use DNorteCore\Providers\SeoServiceProvider;
 use DNorteCore\Providers\ServiceProvider;
+use DNorteCore\Providers\WorkflowServiceProvider;
 use wpdb;
 
 final class Application {
@@ -132,9 +134,11 @@ final class Application {
 	private function resolveProviderClasses( Config $config ): array {
 		$defaults = array(
 			CoreServiceProvider::class,
+			AdminMenuServiceProvider::class,
 			RestApiServiceProvider::class,
 			SeoServiceProvider::class,
 			MediaServiceProvider::class,
+			WorkflowServiceProvider::class,
 		);
 
 		/** @var list<class-string<ServiceProvider>> $configured */

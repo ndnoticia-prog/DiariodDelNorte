@@ -285,11 +285,50 @@ seguía siendo el placeholder mínimo del scaffold inicial.
       todos presentes), `robots.txt` con ambas directivas `Sitemap:`, `debug.log`
       vacío.
 
+## v0.1.0-alpha.9 — Panel de administración y workflow editorial
+
+- [x] `dnorte-core`: infraestructura de menú de administración —
+      `Admin\AdminPage`/`Admin\Contracts\RegistersAdminPages`/
+      `Providers\AdminMenuServiceProvider` (filtro `dnorte_core/admin_pages`, mismo
+      patrón que `dnorte_core/providers`/`dnorte_core/rest_controllers`), registrado
+      por defecto en `Application`.
+- [x] `dnorte-core`: módulo de workflow editorial — estados de post propios
+      (`EditorialStatusRegistrar`), notas editoriales (`EditorialNoteRepository`,
+      tabla `dnorte_editorial_notes`), asignación de artículos por postmeta
+      (`ArticleAssignmentRepository`), y turnos (`ShiftRepository`, tabla
+      `dnorte_shifts`).
+- [x] `dnorte-core`: **panel "Turnos" (`ShiftsAdminPage`)** — asignación de roles
+      para los periodistas de turno (editor/redactor/community manager en turno,
+      configurable en `config/workflow.php`), pedido explícitamente para Diario del
+      Norte, sin equivalente en ND Platform.
+- [x] `dnorte-core`: `Installer\MigrationRegistry` — lista central de migraciones,
+      resuelve el problema de que `register_activation_hook()` corre antes de que
+      exista el contenedor/los providers.
+- [x] 16 pruebas unitarias nuevas (79 en total) y 11 de integración nuevas (38 en
+      total, incluida `MigrationRegistryTest` corriendo el conjunto completo dos
+      veces en la misma prueba para verificar idempotencia sin depender de
+      supuestos entre invocaciones del arnés de pruebas).
+- [x] `composer run check` (90 archivos, 79 pruebas) y `composer test:integration`
+      (38 pruebas) en verde.
+- [x] **Bug real encontrado y corregido, no por ningún test**:
+      `DNORTE_CORE_VERSION` llevaba ocho versiones fija en `0.1.0-alpha.1` —
+      ninguna migración añadida desde alpha.2 se habría ejecutado nunca en un sitio
+      real ya instalado. Corregido subiendo la constante a `0.1.0-alpha.9` y
+      conectando el activation hook / `maybeRunUpgrade()` a `MigrationRegistry::all()`
+      — ver "Fixed" en `CHANGELOG.md`.
+- [x] Verificado en el WordPress real de desarrollo: menú "Turnos", flujo completo
+      de creación de un turno con datos reales (aparece en "En turno ahora" y en
+      "Próximos turnos" según el rango de fechas), enlace de eliminación con nonce,
+      `debug.log` vacío en todo el recorrido, y confirmación directa por MySQL de
+      que la versión instalada y las tablas nuevas se crearon solas vía
+      auto-reparación.
+
 ## Próximas versiones (por decidir)
 
-Alcance técnico restante, no por paridad con ND Platform (ver
-`docs/handoff-nd-platform.md` §8): publicidad propia, analítica propia, IA, búsqueda
-interna y workflow editorial — cada uno preguntando primero si un plugin ya probado o
-una función nativa de WordPress lo resuelve sin construir nada nuevo. En lo estético:
-guía de marca real de Diario del Norte (sustituir el color de acento placeholder), y
-posible logo/isotipo en vez de branding solo textual.
+Alcance técnico restante, confirmado explícitamente por el cliente: publicidad
+propia, analítica propia, IA, búsqueda interna — cada uno preguntando primero si un
+plugin ya probado o una función nativa de WordPress lo resuelve sin construir nada
+nuevo (ver `docs/handoff-nd-platform.md` §8). El workflow editorial y el panel de
+turnos ya se cerraron en alpha.9. En lo estético: guía de marca real de Diario del
+Norte (sustituir el color de acento placeholder), y posible logo/isotipo en vez de
+branding solo textual.

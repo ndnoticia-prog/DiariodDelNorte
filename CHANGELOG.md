@@ -2,6 +2,78 @@
 
 Formato basado en [Keep a Changelog](https://keepachangelog.com/es-ES/1.0.0/).
 
+## [Unreleased] — v0.1.0-alpha.9
+
+### Added
+
+- `dnorte-core`: infraestructura de menú de administración — `Admin\AdminPage` (value
+  object, `render` tipado `Closure` porque `callable` no es un tipo de propiedad
+  legal en PHP), contrato `Admin\Contracts\RegistersAdminPages`,
+  `Providers\AdminMenuServiceProvider` (filtro `dnorte_core/admin_pages`, mismo
+  patrón que `dnorte_core/providers` y `dnorte_core/rest_controllers`: resuelve cada
+  clase vía el contenedor, ordena por `position`, la primera página se registra con
+  `add_menu_page()` y el resto como submenú).
+- `dnorte-core`: módulo de workflow editorial —
+  `Workflow\Status\EditorialStatusRegistrar` (dos estados de post propios,
+  `dnorte_in_review`/`dnorte_needs_changes`, no públicos); `Workflow\Notes\EditorialNote`
+  + `EditorialNoteRepository` (tabla `dnorte_editorial_notes`); `Workflow\Assignments\ArticleAssignmentRepository`
+  (asignación de un artículo a un periodista vía postmeta, `_dnorte_assigned_to`);
+  `Workflow\Shifts\Shift` + `ShiftRepository` (tabla `dnorte_shifts` — periodista, rol,
+  inicio/fin, notas).
+- `dnorte-core`: **`Workflow\Shifts\ShiftsAdminPage`** — panel "Turnos" en el menú de
+  administración (`edit_others_posts`): quién está de turno ahora mismo, formulario
+  para asignar un turno nuevo (`wp_dropdown_users()`, rol de turno desde
+  `config/workflow.php`, rango de fechas), tabla de próximos turnos con eliminación
+  (`wp_nonce_url()`). Es el panel de asignación de roles para los periodistas de
+  turno pedido explícitamente para Diario del Norte — no existía en ND Platform.
+- `dnorte-core`: `Installer\MigrationRegistry` — lista estática central de
+  migraciones, usada tanto por el hook de activación (`register_activation_hook()`,
+  que corre antes de que `Application::boot()` — y por tanto el contenedor y los
+  providers — exista) como por `CoreServiceProvider::maybeRunUpgrade()`.
+- 16 pruebas unitarias nuevas (`AdminPage`, `AdminMenuServiceProvider`,
+  `EditorialStatusRegistrar`, `ArticleAssignmentRepository`, `Shift`,
+  `WorkflowServiceProvider`) — 79 en total en `dnorte-core`. 11 pruebas de
+  integración nuevas (`EditorialNoteRepository`, `ShiftRepository`,
+  `ShiftsAdminPage`, `MigrationRegistry` — esta última corre el conjunto completo de
+  migraciones dos veces en la misma prueba para verificar idempotencia de forma
+  autocontenida) — 38 en total.
+
+### Fixed
+
+- **`dnorte-core`: `DNORTE_CORE_VERSION` (y la cabecera `Version:` del plugin)
+  llevaban ocho versiones (alpha.2–alpha.8) fijas en `0.1.0-alpha.1`.**
+  `CoreServiceProvider::maybeRunUpgrade()` solo corre `Installer::install()` cuando
+  la versión instalada guardada en `wp_options` difiere de esa constante — al no
+  cambiar nunca, ninguna migración añadida desde alpha.2 se habría ejecutado jamás
+  en un sitio real que ya tuviera `dnorte-core` instalado y actualizado en caliente
+  (activar/desactivar no lo habría disparado tampoco: el propio activation hook
+  también dependía de la lista de migraciones, que hasta ahora era un array vacío
+  hardcodeado). No detectado por ningún test — los tests de integración corren
+  siempre contra una base de datos de pruebas recién creada. Encontrado al investigar
+  por qué `MigrationRegistryTest` no se comportaba como se esperaba, verificando el
+  estado real de la base de datos con `mysql` directamente. Corregido: la cabecera y
+  la constante se subieron a `0.1.0-alpha.9`, el activation hook y
+  `maybeRunUpgrade()` ahora usan `MigrationRegistry::all()` en vez de un array vacío,
+  y se verificó en el WordPress real de desarrollo que el mecanismo de
+  autoreparación en `init` crea las tablas nuevas solo, sin desactivar/reactivar.
+  Disciplina a mantener de aquí en adelante: toda migración nueva exige subir
+  `DNORTE_CORE_VERSION`, no solo añadirse a `MigrationRegistry`.
+
+### Verified
+
+- `composer run check` en `dnorte-core` (90 archivos, 0 errores PHPCS, 0 errores
+  PHPStan nivel máximo, 79 pruebas unitarias) y `composer test:integration` (38
+  pruebas) en verde.
+- WordPress real de desarrollo: menú "Turnos" visible en el admin con el ícono
+  correcto; panel completo (En turno ahora / formulario de asignación / próximos
+  turnos) verificado con datos reales — turno creado con periodista, rol e intervalo
+  de fechas reales, aparece correctamente en "Próximos turnos" y, con un intervalo
+  que cubre el momento actual, en "En turno ahora"; enlace "Eliminar" con nonce
+  presente; `debug.log` sin cambios (vacío) durante todo el flujo. Confirmado por
+  consulta directa a MySQL que `dnorte_core_installed_version` quedó en
+  `0.1.0-alpha.9` y que las tablas `wp_dnorte_editorial_notes`/`wp_dnorte_shifts` se
+  crearon solas vía el mecanismo de auto-reparación, sin reinstalar el plugin.
+
 ## [Unreleased] — v0.1.0-alpha.8
 
 ### Added

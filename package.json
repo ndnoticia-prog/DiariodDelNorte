@@ -1,6 +1,6 @@
 {
   "name": "dnorte-platform",
-  "version": "0.1.0-alpha.1",
+  "version": "0.1.0-alpha.9",
   "private": true,
   "description": "Diario del Norte — workspace de build de assets para dnorte-theme.",
   "license": "GPL-2.0-or-later",

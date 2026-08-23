@@ -3,7 +3,7 @@
  * Plugin Name:       DNorte Core
  * Plugin URI:        https://diariodelnorte.net/
  * Description:       Núcleo de la plataforma editorial de Diario del Norte: contenedor DI, configuración, hooks, eventos y orquestación de módulos. Requiere activar dnorte-theme para el front-end.
- * Version:           0.1.0-alpha.1
+ * Version:           0.1.0-alpha.9
  * Requires at least: 6.4
  * Requires PHP:      8.1
  * Author:            Diario del Norte
@@ -20,7 +20,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit; // Sin acceso directo.
 }
 
-define( 'DNORTE_CORE_VERSION', '0.1.0-alpha.1' );
+define( 'DNORTE_CORE_VERSION', '0.1.0-alpha.9' );
 define( 'DNORTE_CORE_FILE', __FILE__ );
 define( 'DNORTE_CORE_DIR', __DIR__ );
 
@@ -77,9 +77,9 @@ add_action(
  * register_activation_hook() debe llamarse desde el archivo principal del plugin en
  * tiempo de carga (no se puede diferir a Application::boot(), que corre en
  * after_setup_theme) — por eso construye sus dependencias a mano en vez de pasar por
- * el Container. No hay migraciones propias todavía; esto solo deja lista la tabla de
- * seguimiento (`{prefix}dnorte_migrations`) y registra la versión instalada, para que
- * futuros módulos ya tengan la infraestructura sobre la que sumar sus migraciones.
+ * el Container. Installer\MigrationRegistry::all() es la lista central de
+ * migraciones (ver su docblock: existe porque a esta altura Application todavía no
+ * arrancó y no puede resolver providers dinámicamente).
  */
 register_activation_hook(
 	__FILE__,
@@ -90,7 +90,7 @@ register_activation_hook(
 		$migrator  = new \DNorteCore\Migrator\Migrator( $database );
 		$installer = new \DNorteCore\Installer\Installer( $migrator );
 
-		$installer->install( array(), DNORTE_CORE_VERSION );
+		$installer->install( \DNorteCore\Installer\MigrationRegistry::all(), DNORTE_CORE_VERSION );
 
 		// Intento de mejor esfuerzo: la regla de rewrite de /sitemap-news.xml se
 		// registra en 'init' (SeoServiceProvider), un hook que corre DESPUÉS de este

@@ -114,13 +114,27 @@ de integración ya la mapea), no vuelve a cargar el `vendor/autoload.php` del pa
 así nunca coexisten dos copias de PHPUnit en el mismo proceso. Mismo patrón exacto que
 `nd-core.php` en ND Platform.
 
-**Migraciones y estado compartido entre invocaciones**: `CoreServiceProvider::maybeRunUpgrade()`
-(enganchado a `init`) ejecuta `Installer::install()` automáticamente en cada arranque —
-exactamente igual que en un sitio real. La tabla `dnorte_migrations` ya existe para
-cuando cualquier clase de prueba arranca; un test que la recree o la vacíe por completo
-rompe esa invariante para el resto de la suite, porque persiste en la base de datos
-compartida entre invocaciones separadas del proceso de PHPUnit. Por eso `MigratorTest`
-limpia solo su propia fila de fixture en `tearDown()`, nunca la tabla completa.
+**Migraciones y estado compartido, solo dentro de una misma invocación**:
+`CoreServiceProvider::maybeRunUpgrade()` (enganchado a `init`) ejecuta
+`Installer::install()` automáticamente en cada arranque — exactamente igual que en un
+sitio real. La tabla `dnorte_migrations` ya existe para cuando cualquier clase de
+prueba arranca *dentro de ese mismo proceso*; un test que la recree o la vacíe por
+completo rompe esa invariante para el resto de la suite en esa invocación. Por eso
+`MigratorTest` limpia solo su propia fila de fixture en `tearDown()`, nunca la tabla
+completa.
+
+**Corrección importante (encontrada en `v0.1.0-alpha.9`, no documentada
+correctamente hasta ahora)**: esa persistencia **no** cruza invocaciones separadas de
+`composer test:integration` — el paso "Installing..." que imprime el arnés de
+`wordpress-develop` al arrancar recrea la base de datos de pruebas desde cero en cada
+invocación del comando. Se confirmó consultando `dnorte_platform_test` directamente
+con `mysql` entre dos corridas: las tablas `dnorte_*` no existían tras la primera.
+Cualquier test que asuma estado dejado por una invocación *anterior* (proceso de
+PHPUnit distinto) es frágil e informativamente engañoso, no solo lento; el patrón
+correcto es que cada test que necesite comprobar una propiedad "entre invocaciones"
+(p. ej. idempotencia de una migración) la reproduzca dentro de su propio método —
+ver `MigrationRegistryTest`, que corre `Migrator::run()` dos veces en la misma
+prueba en vez de asumir que una corrida previa ya dejó las tablas creadas.
 
 **DDL y aislamiento transaccional**: `CREATE`/`DROP TABLE` producen un `COMMIT`
 implícito en MySQL/MariaDB, rompiendo el aislamiento transaccional por-test de
@@ -223,8 +237,89 @@ mismo propósito que `GET /wp-json/nd/v1/system/status` en ND Platform.
   `false` y se cae explícitamente a `large`, nunca a un fatal error ni a una imagen
   rota.
 
+## Menú de administración
+
+Mismo patrón que providers/REST (ver "Extender el registro de providers" más arriba):
+filtro público `dnorte_core/admin_pages` + contrato `Admin\Contracts\RegistersAdminPages`
++ value object `Admin\AdminPage`. `Providers\AdminMenuServiceProvider` (enganchado a
+`admin_menu`) resuelve cada clase del filtro vía el `Container`, junta todos los
+`AdminPage` devueltos y los ordena por `position`; el primero se registra con
+`add_menu_page()` y el resto como `add_submenu_page()` bajo el slug del primero. Un
+módulo nuevo se suma sin que `dnorte-core` tenga que conocer su existencia, igual que
+`dnorte_core/rest_controllers`.
+
+`AdminPage->render` se tipa como `Closure`, no `callable`: `callable` no es un tipo de
+propiedad legal en PHP (`Readonly property must have type` es un error fatal, no un
+aviso), así que el constructor convierte el `callable` recibido con
+`Closure::fromCallable()`.
+
+```php
+add_filter('dnorte_core/admin_pages', function (array $pages): array {
+    $pages[] = MiModulo\Admin\MiPaginaAdmin::class;
+
+    return $pages;
+});
+```
+
+## Workflow editorial
+
+`Workflow\Status\EditorialStatusRegistrar` añade dos estados de post propios
+(`dnorte_in_review`/`dnorte_needs_changes`, `public: false`, `internal: true`,
+`protected: true` — no aparecen en el front-end ni en los listados públicos).
+`Workflow\Notes\EditorialNoteRepository` (tabla `dnorte_editorial_notes`) guarda notas
+internas por artículo. `Workflow\Assignments\ArticleAssignmentRepository` asigna un
+artículo a un periodista vía postmeta (`_dnorte_assigned_to`) — deliberadamente
+postmeta y no una tabla propia, porque es una relación 1-a-1 con el post que ya
+encaja en el modelo nativo de WordPress, sin necesitar índices ni consultas propias
+más allá de lo que `WP_Query`/`get_post_meta()` ya resuelven.
+
+`Workflow\Shifts\ShiftRepository` (tabla `dnorte_shifts`: periodista, rol, inicio,
+fin, notas) sí es una tabla propia — a diferencia de una asignación de artículo, un
+turno no cuelga de ningún post concreto. `Shift->isActiveAt(DateTimeImmutable $moment)`
+centraliza la comparación de rango de fechas para que "en turno ahora" y "próximo
+turno" usen exactamente la misma lógica.
+
+**`Workflow\Shifts\ShiftsAdminPage`** es el panel "Turnos" — el panel de asignación de
+roles para los periodistas de turno pedido explícitamente para Diario del Norte, capa
+`edit_others_posts`. Registra el CRUD completo (crear/eliminar turno) vía
+`dnorte_core/admin_pages`. El manejo de `$_POST`/`$_GET` para crear/eliminar vive en
+métodos separados (`handleCreate()`/`handleDelete()`) de donde se verifica el
+nonce (`handleRequest()`), por lo que WPCS marca falsos positivos de
+`NonceVerification.Missing`/`Recommended` en esos métodos — silenciados con
+`phpcs:ignore` inline documentando la verificación cruzada, mismo criterio que ya
+usa `nd-core` en ND Platform para el mismo patrón.
+
+Los roles de turno disponibles (`editor_en_turno`/`redactor_en_turno`/
+`community_manager`) están en `config/workflow.php`, no hardcodeados en
+`ShiftsAdminPage` — un módulo o el propio sitio puede ampliar la lista sin tocar
+código.
+
+## `Installer\MigrationRegistry` y el orden de arranque en la activación
+
+`register_activation_hook()` se ejecuta en la carga del archivo principal del plugin,
+**antes** de que `Application::boot()` corra (que depende de `after_setup_theme`, y
+por tanto de que el tema ya haya cargado) — el `Container` y los `ServiceProvider` no
+existen todavía en ese momento, así que el activation hook no puede resolver
+migraciones registradas dinámicamente por cada módulo vía filtro, como sí se hace con
+providers/rutas/páginas de admin. `Installer\MigrationRegistry::all()` resuelve esto
+con una lista estática simple, sin contenedor, usada tanto por el activation hook en
+`dnorte-core.php` como por `CoreServiceProvider::maybeRunUpgrade()` — un único lugar
+que enumera todas las migraciones del plugin.
+
+**Disciplina obligatoria, con un incidente real detrás (ver "Fixed" en
+`CHANGELOG.md` de `v0.1.0-alpha.9`)**: `CoreServiceProvider::maybeRunUpgrade()` solo
+vuelve a correr `Installer::install()` cuando `DNORTE_CORE_VERSION` (la constante en
+`dnorte-core.php`) difiere de la versión guardada en `wp_options`. Añadir una
+migración a `MigrationRegistry::all()` sin subir esa constante la deja sin efecto en
+cualquier sitio que ya tuviera el plugin instalado — exactamente lo que pasó entre
+`v0.1.0-alpha.2` y `v0.1.0-alpha.8`, sin que ningún test lo detectara porque los
+tests de integración siempre arrancan contra una base de datos nueva. Toda migración
+nueva exige subir `DNORTE_CORE_VERSION` (y la cabecera `Version:`) en el mismo
+commit.
+
 ## Qué falta por decidir/documentar aquí
 
-A medida que se añadan más módulos (caché, seguridad, ...) documentar en este mismo
-fichero las decisiones de diseño y qué se reimplementa vs. qué se reutiliza de
-WordPress core, siguiendo el mismo criterio que `handoff-nd-platform.md` §4.
+A medida que se añadan más módulos (publicidad propia, analítica propia, IA,
+búsqueda interna, caché, seguridad, ...) documentar en este mismo fichero las
+decisiones de diseño y qué se reimplementa vs. qué se reutiliza de WordPress core,
+siguiendo el mismo criterio que `handoff-nd-platform.md` §4.

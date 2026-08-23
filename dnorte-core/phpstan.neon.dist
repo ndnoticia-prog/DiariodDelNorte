@@ -9,13 +9,16 @@ parameters:
         -
             # phpstan-strict-rules trata cualquier cast de "mixed" como
             # sospechoso, pero coaccionar una columna de una fila de $wpdb (ya
-            # tipada como string por el propio esquema de la tabla, ver
-            # Migrator::ensureMigrationsTableExists()) con (string) es el
+            # tipada como string/int por el propio esquema de la tabla, ver los
+            # migrations de cada repositorio) con (string)/(int) es el
             # idiomatismo estándar de WordPress: no es dato de usuario sin
             # validar. Mismo criterio documentado en ND Platform.
-            message: '#Cannot cast mixed to string#'
+            message: '#Cannot cast mixed to (string|int)#'
             paths:
                 - src/Migrator/Migrator.php
+                - src/Workflow/Assignments/ArticleAssignmentRepository.php
+                - src/Workflow/Notes/EditorialNoteRepository.php
+                - src/Workflow/Shifts/ShiftRepository.php
 
 # szepeviktor/phpstan-wordpress y phpstan/phpstan-strict-rules ya se incluyen
 # automáticamente vía phpstan/extension-installer (composer.json); incluirlos

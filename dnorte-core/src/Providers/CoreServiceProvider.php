@@ -15,6 +15,7 @@ namespace DNorteCore\Providers;
 
 use DNorteCore\Hooks\HookManager;
 use DNorteCore\Installer\Installer;
+use DNorteCore\Installer\MigrationRegistry;
 
 final class CoreServiceProvider extends ServiceProvider {
 
@@ -37,6 +38,6 @@ final class CoreServiceProvider extends ServiceProvider {
 			return;
 		}
 
-		$installer->install( array(), DNORTE_CORE_VERSION );
+		$installer->install( MigrationRegistry::all(), DNORTE_CORE_VERSION );
 	}
 }
