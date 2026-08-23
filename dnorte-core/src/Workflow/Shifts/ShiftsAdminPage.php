@@ -15,6 +15,7 @@ namespace DNorteCore\Workflow\Shifts;
 use DNorteCore\Admin\AdminPage;
 use DNorteCore\Admin\Contracts\RegistersAdminPages;
 use DNorteCore\Config\Config;
+use DNorteCore\Support\DatetimeLocalInput;
 
 final class ShiftsAdminPage implements RegistersAdminPages {
 
@@ -129,8 +130,8 @@ final class ShiftsAdminPage implements RegistersAdminPages {
 			);
 		}
 
-		$startsAt = $this->toMysqlDatetime( $starts );
-		$endsAt   = $this->toMysqlDatetime( $ends );
+		$startsAt = DatetimeLocalInput::toMysqlDatetime( $starts );
+		$endsAt   = DatetimeLocalInput::toMysqlDatetime( $ends );
 
 		if ( $startsAt === null || $endsAt === null || $endsAt <= $startsAt ) {
 			return array(
@@ -165,19 +166,6 @@ final class ShiftsAdminPage implements RegistersAdminPages {
 			'type'    => 'success',
 			'message' => __( 'Turno eliminado.', 'dnorte-core' ),
 		);
-	}
-
-	private function toMysqlDatetime( string $value ): ?string {
-		if ( $value === '' ) {
-			return null;
-		}
-
-		// Los <input type="datetime-local"> envían "YYYY-MM-DDTHH:MM"; MySQL espera
-		// un espacio en vez de la "T".
-		$normalized = str_replace( 'T', ' ', $value );
-		$timestamp  = strtotime( $normalized );
-
-		return $timestamp !== false ? gmdate( 'Y-m-d H:i:s', $timestamp ) : null;
 	}
 
 	private function renderOnDutyNow(): void {

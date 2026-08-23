@@ -43,6 +43,7 @@ final class MigrationRegistryTest extends WP_UnitTestCase {
 				'create_shifts_table',
 				'add_search_fulltext_index_to_posts',
 				'create_pageviews_table',
+				'create_ads_table',
 			),
 			$firstRun
 		);

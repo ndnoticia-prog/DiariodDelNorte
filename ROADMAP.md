@@ -391,12 +391,43 @@ seguía siendo el placeholder mínimo del scaffold inicial.
       artículo correcto en "Artículos más vistos"; `debug.log` vacío en todo el
       recorrido.
 
+## v0.1.0-alpha.12 — Publicidad propia
+
+- [x] `dnorte-core`: los cinco espacios pedidos explícitamente por el cliente
+      (`config/ads.php`) — Cabecera (encima de la barra superior, todo el
+      sitio), Inicio (debajo del menú, todo el sitio), Top noticia (al iniciar
+      el artículo), Intermedio (después del tercer párrafo), Final (al terminar
+      el artículo).
+- [x] `Ads\Ad`/`Ads\AdRepository` (tabla `dnorte_ads`, un único anuncio activo
+      por espacio en v1, con activo/inactivo y ventana de fechas opcional para
+      programar una campaña). `Ads\AdSlotRenderer` (HTML sin escapar, marcado de
+      terceros por diseño). `Ads\ContentParagraphInjector` (pieza pura) para el
+      espacio Intermedio.
+- [x] `Providers\AdsServiceProvider`: Cabecera/Inicio vía dos hooks propios y
+      mínimos añadidos a `dnorte-theme/header.php`; Top noticia/Intermedio/Final
+      enteramente vía el filtro `the_content` de WordPress, sin tocar ninguna
+      plantilla del tema.
+- [x] Panel "Publicidad" (`Ads\AdsAdminPage`, capacidad `manage_options` — más
+      estricta que Turnos/Analítica, por guardar HTML/JS sin filtrar).
+- [x] `Support\DatetimeLocalInput` extraído desde `ShiftsAdminPage` (segundo uso
+      real) para compartirlo con `AdsAdminPage`.
+- [x] 17 pruebas unitarias nuevas (115 en total) y 9 de integración nuevas (60
+      en total), incluida una de punta a punta con un bucle de WordPress real
+      (`go_to()`) verificando el orden exacto de los tres espacios de artículo.
+      `composer run check` y `composer test:integration` en verde.
+- [x] Verificado en el WordPress real de desarrollo: los cinco espacios
+      configurados desde el panel real y confirmados en la posición correcta —
+      incluida la verificación exacta de "después del tercer párrafo" con un
+      artículo de 4 párrafos creado para la prueba — en escritorio, móvil y
+      ambos modos de color. "Publicidad" como su propia entrada de nivel
+      superior en el menú (no anidada). `debug.log` vacío en todo el recorrido.
+
 ## Próximas versiones (por decidir)
 
-Alcance técnico restante, confirmado explícitamente por el cliente: publicidad
-propia, IA — cada uno preguntando primero si un plugin ya probado o una función
-nativa de WordPress lo resuelve sin construir nada nuevo (ver
-`docs/handoff-nd-platform.md` §8). El workflow editorial, el panel de turnos, la
-búsqueda interna y la analítica propia ya se cerraron (alpha.9–alpha.11). En lo
+Alcance técnico restante, confirmado explícitamente por el cliente: IA — con la
+misma pregunta previa de si un plugin ya probado o una función nativa de
+WordPress lo resuelve sin construir nada nuevo (ver `docs/handoff-nd-platform.md`
+§8). El workflow editorial, el panel de turnos, la búsqueda interna, la
+analítica propia y la publicidad propia ya se cerraron (alpha.9–alpha.12). En lo
 estético: guía de marca real de Diario del Norte (sustituir el color de acento
 placeholder), y posible logo/isotipo en vez de branding solo textual.

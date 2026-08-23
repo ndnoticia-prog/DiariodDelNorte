@@ -15,6 +15,7 @@ declare(strict_types=1);
 
 namespace DNorteCore\Installer;
 
+use DNorteCore\Ads\Migrations\CreateAdsTable;
 use DNorteCore\Analytics\Pageviews\CreatePageviewsTable;
 use DNorteCore\Migrator\Contracts\Migration;
 use DNorteCore\Search\Fulltext\CreateSearchFulltextIndex;
@@ -32,6 +33,7 @@ final class MigrationRegistry {
 			new CreateShiftsTable(),
 			new CreateSearchFulltextIndex(),
 			new CreatePageviewsTable(),
+			new CreateAdsTable(),
 		);
 	}
 }

@@ -809,3 +809,36 @@ img {
 		margin: 0;
 	}
 }
+
+// ---------------------------------------------------------------------------
+// Publicidad — dnorte-core (Ads\AdSlotRenderer) imprime uno de estos <div> solo
+// cuando el espacio tiene un anuncio activo; si no, no imprime nada (nunca un
+// contenedor vacío que dejaría un hueco).
+// ---------------------------------------------------------------------------
+
+.dnorte-ad {
+	text-align: center;
+
+	&::before {
+		content: 'Publicidad';
+		display: block;
+		font-size: 0.6875rem;
+		text-transform: uppercase;
+		letter-spacing: 0.05em;
+		color: var(--color-text-muted);
+		margin-bottom: var(--space-1);
+	}
+}
+
+.dnorte-ad--cabecera,
+.dnorte-ad--inicio {
+	max-width: $breakpoint-xl;
+	margin: var(--space-3) auto;
+	padding: 0 var(--space-3);
+}
+
+.dnorte-ad--top_noticia,
+.dnorte-ad--intermedio,
+.dnorte-ad--final {
+	margin: var(--space-4) 0;
+}

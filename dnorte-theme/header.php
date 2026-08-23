@@ -31,6 +31,15 @@ declare(strict_types=1);
 	<?php esc_html_e( 'Saltar al contenido', 'dnorte-theme' ); ?>
 </a>
 
+<?php
+/**
+ * Punto de enganche para dnorte-core (Ads\Providers\AdsServiceProvider, espacio
+ * "cabecera") — después del skip-link a propósito, para no quitarle el primer
+ * lugar como elemento enfocable de accesibilidad.
+ */
+do_action( 'dnorte_theme/before_topbar' );
+?>
+
 <div class="site-topbar">
 	<div class="site-topbar__inner">
 		<span class="site-topbar__date">
@@ -88,3 +97,11 @@ declare(strict_types=1);
 		</div>
 	</div>
 </header>
+
+<?php
+/**
+ * Punto de enganche para dnorte-core (Ads\Providers\AdsServiceProvider, espacio
+ * "inicio") — justo debajo del menú, antes de <main>.
+ */
+do_action( 'dnorte_theme/after_header' );
+?>

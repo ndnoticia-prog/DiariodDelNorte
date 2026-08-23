@@ -420,9 +420,64 @@ deliberada, no una limitación técnica temporal:
   WordPress core no tiene ningún concepto nativo de "cuántas veces se vio este
   post".
 
+## Publicidad propia: los cinco espacios y cómo llegan al HTML
+
+Los cinco espacios pedidos explícitamente para Diario del Norte
+(`config/ads.php`: `cabecera`, `inicio`, `top_noticia`, `intermedio`, `final`) se
+implementan con dos mecanismos distintos según dónde caen:
+
+- **Cabecera/Inicio (sitewide, fuera del flujo de contenido)**: dos hooks propios
+  y mínimos que `dnorte-theme` añade en `header.php` —
+  `dnorte_theme/before_topbar` (justo después del skip-link, antes de la barra
+  superior — "encima de la topbar") y `dnorte_theme/after_header` (justo después
+  de `</header>`, antes de `<main>` — "debajo del menú"). Son la única lógica que
+  `dnorte-theme` tuvo que sumar para todo el módulo: dos `do_action()` de una
+  línea, sin ningún `if`/lógica de negocio — el tema sigue sin saber qué es un
+  "anuncio", solo ofrece el punto de enganche. Un `do_action()` sin ningún
+  listener registrado (`dnorte-core` inactivo) es un no-op seguro.
+- **Top noticia/Intermedio/Final (dentro del artículo)**: los tres viven
+  enteramente en `dnorte-core`, sin tocar ninguna plantilla del tema, enganchados
+  al filtro nativo `the_content` en prioridad 20 (después de `wpautop`, prioridad
+  10 — necesario para que `Ads\ContentParagraphInjector` opere sobre HTML que ya
+  tiene las etiquetas `<p>` reales, no sobre texto plano separado por líneas en
+  blanco). `top_noticia` se antepone al contenido, `final` se añade al final, e
+  `intermedio` se inserta después del N-ésimo `</p>` (`ads.mid_article_paragraph`,
+  3 por defecto) — si el artículo tiene menos párrafos que eso, simplemente no se
+  inserta en ningún otro lado; nunca aparece en una posición distinta a la
+  configurada. Guardado con `in_the_loop()`/`is_main_query()` para no aparecer en
+  un widget de "relacionados" que también llame a `the_content()`.
+- **`Ads\ContentParagraphInjector`** es una pieza pura (ninguna dependencia de
+  WordPress) — mismo criterio que `Search\BooleanModeTermBuilder`: probarla no
+  necesita un `WP_Post`/`the_content` real.
+- **`dnorte_ads`** (`Ads\Migrations\CreateAdsTable`): **un único anuncio activo
+  por espacio en v1** (`UNIQUE KEY slot_key`) — decisión de alcance deliberada,
+  no una limitación técnica: los cinco espacios pedidos no necesitaban rotación
+  entre varios anunciantes todavía. Ampliar a varias filas por `slot_key`
+  (quitando la `UNIQUE KEY` y añadiendo alguna estrategia de selección) es el
+  camino natural si eso cambia. `starts_at`/`ends_at` sí admiten `NULL` —a
+  diferencia de otras tablas de la plataforma, que usan `''` como "sin valor"—
+  porque `''` no es una fecha `DATETIME` válida.
+- **`Ads\AdSlotRenderer`** imprime el HTML del anuncio **sin escapar** — a
+  propósito: el contenido casi siempre es una etiqueta `<script>` de una red
+  publicitaria o un banner con `<img>`/`<a>`, marcado que debe salir tal cual.
+  Por eso `Ads\AdsAdminPage` exige `manage_options` (más estricto que
+  `edit_others_posts` en Turnos/Analítica) — la capacidad de inyectar HTML/JS en
+  todo el sitio queda reservada a quien administra el sitio, mismo nivel de
+  confianza que WordPress ya da a `unfiltered_html`.
+- **Etiqueta "Publicidad"** (`app.scss`, `.dnorte-ad::before`): transparencia
+  hacia el visitante, criterio estándar de la industria — no es solo estética.
+
+## `Admin\AdminPage::$parentSlug` — ver "Menú de administración"
+
+Con tres módulos de administración ya registrados (Turnos, Analítica,
+Publicidad, cada uno con su propia entrada de nivel superior gracias al fix de
+`v0.1.0-alpha.11`), este es el patrón a seguir para cualquier módulo nuevo: un
+`AdminPage` con `parentSlug: null` para su propia entrada, o con el slug de un
+módulo existente para anidarse como submenú — nunca depender de la posición
+relativa entre módulos sin relación.
+
 ## Qué falta por decidir/documentar aquí
 
-A medida que se añadan más módulos (publicidad propia, IA, caché, seguridad, ...)
-documentar en este mismo fichero las decisiones de diseño y qué se reimplementa
-vs. qué se reutiliza de WordPress core, siguiendo el mismo criterio que
-`handoff-nd-platform.md` §4.
+A medida que se añadan más módulos (IA, caché, seguridad, ...) documentar en este
+mismo fichero las decisiones de diseño y qué se reimplementa vs. qué se reutiliza
+de WordPress core, siguiendo el mismo criterio que `handoff-nd-platform.md` §4.

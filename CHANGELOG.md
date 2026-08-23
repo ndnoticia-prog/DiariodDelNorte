@@ -2,6 +2,61 @@
 
 Formato basado en [Keep a Changelog](https://keepachangelog.com/es-ES/1.0.0/).
 
+## [Unreleased] — v0.1.0-alpha.12
+
+### Added
+
+- `dnorte-core`: módulo de publicidad propia — los cinco espacios pedidos
+  explícitamente para Diario del Norte (`config/ads.php`): **Cabecera** (encima
+  de la barra superior, en todo el sitio), **Inicio** (debajo del menú, en todo
+  el sitio), **Top noticia** (al iniciar la lectura del artículo), **Intermedio**
+  (después del tercer párrafo) y **Final** (al terminar la lectura) — los tres
+  últimos exclusivos de artículos. Ver "Publicidad propia" en
+  `docs/Architecture.md` para el diseño completo.
+- `dnorte-core`: `Ads\Ad`/`Ads\AdRepository` (tabla `dnorte_ads`, un único
+  anuncio activo por espacio en v1, con `enabled`/`starts_at`/`ends_at`
+  opcionales para programar una campaña). `Ads\AdSlotRenderer` envuelve el HTML
+  del anuncio en su contenedor (`.dnorte-ad--{slot}`) sin escaparlo — es marcado
+  de terceros por diseño. `Ads\ContentParagraphInjector` (pieza pura) inserta el
+  espacio "Intermedio" después del N-ésimo párrafo real del contenido
+  (`ads.mid_article_paragraph`), sin forzarlo a otra posición si el artículo
+  tiene menos párrafos.
+- `dnorte-core`: `Providers\AdsServiceProvider` — Cabecera/Inicio vía dos hooks
+  propios y mínimos que se añadieron a `dnorte-theme/header.php`
+  (`dnorte_theme/before_topbar`/`after_header`); Top noticia/Intermedio/Final
+  enteramente vía el filtro nativo `the_content` (prioridad 20, después de
+  `wpautop`), sin tocar ninguna plantilla del tema.
+- `dnorte-core`: panel "Publicidad" (`Ads\AdsAdminPage`) — un formulario por
+  espacio (HTML, activo/inactivo, ventana de fechas opcional). Exige
+  `manage_options` (más estricto que `edit_others_posts` en Turnos/Analítica): la
+  capacidad de guardar HTML/JS sin filtrar que se sirve en todo el sitio debe
+  quedar reservada a quien administra el sitio.
+- `dnorte-core`: `Support\DatetimeLocalInput` — extraído desde
+  `Workflow\Shifts\ShiftsAdminPage` (que tenía su propia copia privada del mismo
+  método) al necesitarlo también `Ads\AdsAdminPage`; `ShiftsAdminPage` ahora usa
+  el mismo helper compartido.
+- `app.scss`: etiqueta "Publicidad" visible sobre cada espacio con anuncio activo
+  (`.dnorte-ad::before`) — transparencia hacia el visitante.
+- 17 pruebas unitarias nuevas (115 en total en `dnorte-core`) y 9 de integración
+  nuevas (60 en total), incluida una prueba de punta a punta que confirma el
+  orden de los tres espacios de artículo dentro de un bucle de WordPress real
+  (`go_to()` + `have_posts()`/`the_post()`).
+
+### Verified
+
+- `composer run check` (0 errores PHPCS, 0 errores PHPStan nivel máximo, 115
+  pruebas unitarias) y `composer test:integration` (60 pruebas) en verde.
+- WordPress real de desarrollo: los cinco espacios configurados desde el panel
+  "Publicidad" real (incluida la navegación completa del formulario) y
+  verificados visualmente en la posición correcta — Cabecera encima de la barra
+  superior, Inicio debajo del menú (ambos en portada y en artículo), Top noticia
+  justo antes del primer párrafo, Intermedio después del tercer párrafo exacto
+  (probado con un artículo de 4 párrafos creado para la verificación), Final tras
+  el último párrafo y antes de comentarios — en escritorio, móvil (375px), claro
+  y oscuro. "Publicidad" aparece como su propia entrada de nivel superior en el
+  menú de administración (no anidada bajo Turnos ni Analítica). `debug.log` vacío
+  en todo el recorrido.
+
 ## [Unreleased] — v0.1.0-alpha.11
 
 ### Added
