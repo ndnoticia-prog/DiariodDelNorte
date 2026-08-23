@@ -2,6 +2,67 @@
 
 Formato basado en [Keep a Changelog](https://keepachangelog.com/es-ES/1.0.0/).
 
+## [Unreleased] — v0.1.0-alpha.10
+
+### Added
+
+- `dnorte-core`: módulo de búsqueda interna. `Search\Fulltext\CreateSearchFulltextIndex`
+  añade un índice FULLTEXT sobre `wp_posts.post_title`/`post_content` (primera
+  migración de la plataforma que altera una tabla nativa de WordPress en vez de
+  crear una tabla `dnorte_*` propia — comprueba `SHOW INDEX` antes de `ALTER TABLE`
+  porque `ADD FULLTEXT` no admite `IF NOT EXISTS`). `Search\SearchQueryModifier` se
+  engancha a los filtros nativos `posts_search`/`posts_orderby` (para cualquier
+  `WP_Query` con `is_search()`, no solo la consulta principal) y sustituye el
+  `LIKE '%término%'` + orden por fecha de WordPress core por un
+  `MATCH ... AGAINST (... IN BOOLEAN MODE)` con ranking por relevancia real.
+  `Search\BooleanModeTermBuilder` (pieza pura) traduce el término del visitante a
+  esa sintaxis, con `*` final por palabra para que funcione como "empieza por".
+- `dnorte-core`: `Database\DatabaseManager::fragment()` — excepción documentada al
+  principio de "único punto de acceso a $wpdb": expone `wpdb::prepare()` como
+  fragmento SQL sin ejecutar la consulta, porque `posts_search`/`posts_orderby`
+  esperan de vuelta eso, no un resultado.
+- `dnorte-core`: `GET /wp-json/dnorte/v1/search?q=...` (`Search\InternalSearchController`)
+  — endpoint ligero para una caja de búsqueda con sugerencias en vivo (título,
+  extracto, URL, fecha), reutiliza el mismo `WP_Query` con `s` y por tanto el mismo
+  ranking por relevancia sin duplicar lógica.
+- `dnorte-theme`: caja de búsqueda funcional en la cabecera (`searchform.php`,
+  `get_search_form()`) y `search.php` — página de resultados que reutiliza
+  `template-parts/post-card.php` y `the_posts_pagination()`, mismo patrón que
+  `archive.php`.
+- `config/search.php`: tipos de contenido cubiertos, longitud mínima de término
+  (3 caracteres — más corto que eso MySQL ya ignora la palabra en el índice
+  FULLTEXT por defecto) y límite de resultados del endpoint REST.
+- 7 pruebas unitarias nuevas (88 en total en `dnorte-core`) y 5 de integración
+  nuevas (43 en total).
+
+### Fixed
+
+- `dnorte-theme`: `DNORTE_THEME_VERSION` estaba hardcodeada en `functions.php`
+  (`0.1.0-alpha.1`, nunca actualizada pese a 9 subidas de versión en `style.css`) y
+  se usa como cadena de caché (`?ver=...`) de `dist/app.css`/`dist/app.js` —
+  mismo tipo de "versión olvidada" que `DNORTE_CORE_VERSION` en `v0.1.0-alpha.9`,
+  aquí con el agravante de invalidar la caché del navegador en cada despliegue.
+  Corregido leyéndola siempre de `wp_get_theme()->get('Version')` (la cabecera
+  `Version:` de `style.css`, única fuente de verdad) en vez de un valor fijo.
+
+### Verified
+
+- `composer run check` en `dnorte-core` (0 errores PHPCS, 0 errores PHPStan nivel
+  máximo, 88 pruebas unitarias) y `composer test:integration` (43 pruebas) en
+  verde.
+- Hallazgo real durante la primera corrida de las pruebas de integración de
+  búsqueda (no un bug de `SearchQueryModifier`): InnoDB no hace visibles las filas
+  insertadas en la misma transacción sin confirmar a un `MATCH ... AGAINST`, y
+  `WP_UnitTestCase` envuelve cada prueba en una transacción que nunca se confirma
+  — corregido moviendo los artículos de fixture a `wpSetUpBeforeClass()` (documentado
+  en `docs/Architecture.md`).
+- WordPress real de desarrollo: caja de búsqueda en la cabecera (escritorio, móvil
+  375px, claro y oscuro), búsqueda real de "sector energético" devuelve solo el
+  artículo relevante (no un `LIKE` que hubiera traído coincidencias parciales
+  sueltas), estado vacío ("No se encontraron artículos con ese término.") con un
+  término sin resultados, endpoint REST verificado con `curl` (permalinks bonitos y
+  `?rest_route=`), `debug.log` vacío en todo el recorrido.
+
 ## [Unreleased] — v0.1.0-alpha.9
 
 ### Added

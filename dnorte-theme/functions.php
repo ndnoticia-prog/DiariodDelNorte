@@ -12,7 +12,13 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit; // Sin acceso directo.
 }
 
-define( 'DNORTE_THEME_VERSION', '0.1.0-alpha.1' );
+// Leído siempre de la cabecera Version: de style.css (única fuente de verdad),
+// nunca hardcodeado aquí: un valor fijo se queda desactualizado en cuanto se sube
+// la versión en style.css sin acordarse de este fichero — exactamente el mismo
+// tipo de bug de "versión olvidada" que DNORTE_CORE_VERSION tuvo en dnorte-core
+// hasta v0.1.0-alpha.9 (ver CHANGELOG.md), aquí con el agravante de que además
+// invalida la caché del navegador de dist/app.css/dist/app.js en cada despliegue.
+define( 'DNORTE_THEME_VERSION', (string) wp_get_theme()->get( 'Version' ) );
 define( 'DNORTE_THEME_DIR', get_template_directory() );
 define( 'DNORTE_THEME_URI', get_template_directory_uri() );
 

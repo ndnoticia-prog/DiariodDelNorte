@@ -19,6 +19,17 @@ parameters:
                 - src/Workflow/Assignments/ArticleAssignmentRepository.php
                 - src/Workflow/Notes/EditorialNoteRepository.php
                 - src/Workflow/Shifts/ShiftRepository.php
+        -
+            # Mismo mensaje de phpstan-strict-rules, motivo distinto: WP_Query::get('s')
+            # y WP_REST_Request::get_param('q') devuelven "mixed" porque WordPress no
+            # tipa sus query vars/parámetros — pero el argumento REST ya declara
+            # 'type' => 'string' (InternalSearchController::registerRoutes()) y 's' es
+            # en la práctica siempre una cadena en un WP_Query real. El (string) es un
+            # cast defensivo estándar, no una validación que falte.
+            message: '#Cannot cast mixed to string#'
+            paths:
+                - src/Search/InternalSearchController.php
+                - src/Search/SearchQueryModifier.php
 
 # szepeviktor/phpstan-wordpress y phpstan/phpstan-strict-rules ya se incluyen
 # automáticamente vía phpstan/extension-installer (composer.json); incluirlos

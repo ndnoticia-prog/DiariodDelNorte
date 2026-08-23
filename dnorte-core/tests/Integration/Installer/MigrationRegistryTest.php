@@ -38,7 +38,7 @@ final class MigrationRegistryTest extends WP_UnitTestCase {
 		$secondRun = $migrator->run( MigrationRegistry::all() );
 
 		self::assertSame(
-			array( 'create_editorial_notes_table', 'create_shifts_table' ),
+			array( 'create_editorial_notes_table', 'create_shifts_table', 'add_search_fulltext_index_to_posts' ),
 			$firstRun
 		);
 		self::assertSame( array(), $secondRun );

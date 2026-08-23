@@ -143,6 +143,20 @@ tabla de fixtures en `wpSetUpBeforeClass()`/`wpTearDownAfterClass()` (una sola v
 toda la clase, fuera de cualquier transacción por-test), no dentro de un test
 individual.
 
+**FULLTEXT (InnoDB) y esa misma transacción, en la dirección contraria** (encontrado
+en `v0.1.0-alpha.10`, mismo mecanismo que el punto anterior): InnoDB no hace
+visibles las filas insertadas dentro de una transacción **sin confirmar** a una
+búsqueda `MATCH ... AGAINST` contra un índice FULLTEXT — el motor solo fusiona esos
+cambios al índice de texto completo en el `COMMIT`. Como `WP_UnitTestCase` envuelve
+cada método de prueba en una transacción que nunca se confirma (solo hace
+`ROLLBACK`, para aislar pruebas entre sí), un `WP_Post` creado con
+`self::factory()->post->create()` **dentro** de un método de prueba de
+`SearchQueryModifierTest`/`InternalSearchControllerTest` es invisible para
+`SearchQueryModifier` — no por ningún bug del filtro, sino porque MySQL literalmente
+no lo indexó todavía. Mismo arreglo que el caso de DDL: crear esos artículos de
+fixture en `wpSetUpBeforeClass()`, que corre antes de que la transacción por-prueba
+se abra.
+
 ## REST API
 
 Mismo patrón que el registro de providers: un filtro público
@@ -316,6 +330,39 @@ cualquier sitio que ya tuviera el plugin instalado — exactamente lo que pasó 
 tests de integración siempre arrancan contra una base de datos nueva. Toda migración
 nueva exige subir `DNORTE_CORE_VERSION` (y la cabecera `Version:`) en el mismo
 commit.
+
+## Búsqueda interna: qué reimplementa `dnorte-core` y qué reutiliza de WordPress core
+
+- **Paginación, `post_status`, permisos, caché de objeto**: no se reimplementan.
+  Tanto `search.php` (dnorte-theme) como `InternalSearchController` arman un
+  `WP_Query` normal con `s` — todo lo que `WP_Query`/`the_posts_pagination()` ya
+  resuelven se reutiliza tal cual.
+- **Lo único nuevo es el ranking por relevancia**: WordPress core busca con
+  `LIKE '%término%'` sobre `post_title`/`post_content` y ordena por fecha — sin
+  ninguna noción de "qué tan bien encaja" un resultado. `Search\SearchQueryModifier`
+  sustituye eso enganchándose a los filtros nativos `posts_search`/`posts_orderby`
+  (aplicándose a **cualquier** `WP_Query` con `is_search()` verdadero, no solo a la
+  consulta principal de la página de resultados) por un `MATCH (post_title,
+  post_content) AGAINST (... IN BOOLEAN MODE)` sobre el índice FULLTEXT que crea
+  `Search\Fulltext\CreateSearchFulltextIndex` — la única migración de la plataforma
+  que altera una tabla nativa de WordPress (`wp_posts`) en vez de crear una tabla
+  `dnorte_*` propia (ver el docblock de esa clase).
+- **`Search\BooleanModeTermBuilder`** traduce el término del visitante a sintaxis
+  booleana de MySQL (limpia operadores reservados, añade `*` a cada palabra para
+  que funcione como "empieza por" — pensado para una caja de sugerencias en vivo,
+  no solo la página de resultados). Es una pieza pura, sin dependencia de
+  WordPress, separada a propósito de `SearchQueryModifier` para poder probarla con
+  Brain Monkey sin necesitar un `WP_Query` real.
+- **`DatabaseManager::fragment()`**: excepción documentada al principio de "único
+  punto de acceso a `$wpdb`" — expone `wpdb::prepare()` como un trozo de SQL ya
+  escapado sin ejecutar ninguna consulta, porque `posts_search`/`posts_orderby`
+  esperan de vuelta exactamente eso (un fragmento para que `WP_Query` lo inserte en
+  la consulta que arma él mismo), no un resultado.
+- **`GET /wp-json/dnorte/v1/search?q=...`** (`InternalSearchController`): endpoint
+  ligero para una caja de búsqueda con sugerencias en vivo — reutiliza el mismo
+  `WP_Query` con `s`, así que hereda el ranking por relevancia sin duplicar esa
+  lógica. Términos más cortos que `search.min_query_length` (`config/search.php`)
+  se responden con una lista vacía sin tocar la base de datos.
 
 ## Qué falta por decidir/documentar aquí
 

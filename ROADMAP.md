@@ -323,12 +323,48 @@ seguía siendo el placeholder mínimo del scaffold inicial.
       que la versión instalada y las tablas nuevas se crearon solas vía
       auto-reparación.
 
+## v0.1.0-alpha.10 — Búsqueda interna
+
+- [x] `dnorte-core`: `Search\Fulltext\CreateSearchFulltextIndex` — índice FULLTEXT
+      sobre `wp_posts.post_title`/`post_content` (primera migración que altera una
+      tabla nativa de WordPress, no una tabla `dnorte_*` propia).
+- [x] `dnorte-core`: `Search\SearchQueryModifier` (filtros `posts_search`/
+      `posts_orderby`) sustituye el `LIKE`+orden-por-fecha nativo por
+      `MATCH ... AGAINST` con ranking por relevancia real, para cualquier
+      `WP_Query` de búsqueda. `Search\BooleanModeTermBuilder` (pieza pura) arma la
+      sintaxis booleana con `*` por palabra ("empieza por").
+- [x] `dnorte-core`: `Database\DatabaseManager::fragment()` — expone
+      `wpdb::prepare()` como fragmento SQL para insertar en el filtro de
+      WordPress, sin ejecutar la consulta.
+- [x] `dnorte-core`: `GET /wp-json/dnorte/v1/search?q=...` — endpoint ligero para
+      una caja de búsqueda con sugerencias en vivo, reutiliza el mismo `WP_Query`
+      con `s` (y por tanto el mismo ranking) sin duplicar lógica.
+- [x] `dnorte-theme`: caja de búsqueda funcional en la cabecera y `search.php`
+      (reutiliza `post-card.php`/`the_posts_pagination()`, mismo patrón que
+      `archive.php`).
+- [x] 7 pruebas unitarias nuevas (88 en total) y 5 de integración nuevas (43 en
+      total). `composer run check` y `composer test:integration` en verde.
+- [x] **Bug real encontrado y corregido, no relacionado con búsqueda pero
+      encontrado al tocar `dnorte-theme`**: `DNORTE_THEME_VERSION` llevaba 9
+      versiones hardcodeada en `functions.php`, invalidando la caché del navegador
+      de los assets en cada despliegue — corregido leyéndola siempre de la
+      cabecera `Version:` de `style.css`. Ver "Fixed" en `CHANGELOG.md`.
+- [x] **Hallazgo real de infraestructura de pruebas**: InnoDB no hace visibles las
+      filas insertadas en la misma transacción sin confirmar a un
+      `MATCH ... AGAINST`, y `WP_UnitTestCase` nunca confirma la transacción
+      por-prueba — corregido creando los artículos de fixture en
+      `wpSetUpBeforeClass()`. Documentado en `docs/Architecture.md`.
+- [x] Verificado en el WordPress real de desarrollo: caja de búsqueda en escritorio
+      y móvil (claro/oscuro), búsqueda real de "sector energético" devuelve solo el
+      artículo relevante, estado vacío correcto, endpoint REST confirmado con
+      `curl`, `debug.log` vacío en todo el recorrido.
+
 ## Próximas versiones (por decidir)
 
 Alcance técnico restante, confirmado explícitamente por el cliente: publicidad
-propia, analítica propia, IA, búsqueda interna — cada uno preguntando primero si un
-plugin ya probado o una función nativa de WordPress lo resuelve sin construir nada
-nuevo (ver `docs/handoff-nd-platform.md` §8). El workflow editorial y el panel de
-turnos ya se cerraron en alpha.9. En lo estético: guía de marca real de Diario del
-Norte (sustituir el color de acento placeholder), y posible logo/isotipo en vez de
-branding solo textual.
+propia, analítica propia, IA — cada uno preguntando primero si un plugin ya probado
+o una función nativa de WordPress lo resuelve sin construir nada nuevo (ver
+`docs/handoff-nd-platform.md` §8). El workflow editorial, el panel de turnos y la
+búsqueda interna ya se cerraron (alpha.9–alpha.10). En lo estético: guía de marca
+real de Diario del Norte (sustituir el color de acento placeholder), y posible
+logo/isotipo en vez de branding solo textual.

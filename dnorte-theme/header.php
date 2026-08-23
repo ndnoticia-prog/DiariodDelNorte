@@ -55,6 +55,8 @@ declare(strict_types=1);
 		</div>
 
 		<div class="header-controls">
+			<?php get_search_form(); ?>
+
 			<nav id="site-navigation" class="main-navigation" role="navigation" aria-label="<?php esc_attr_e( 'Menú principal', 'dnorte-theme' ); ?>">
 				<?php
 				wp_nav_menu(

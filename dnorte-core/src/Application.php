@@ -26,6 +26,7 @@ use DNorteCore\Providers\AdminMenuServiceProvider;
 use DNorteCore\Providers\CoreServiceProvider;
 use DNorteCore\Providers\MediaServiceProvider;
 use DNorteCore\Providers\RestApiServiceProvider;
+use DNorteCore\Providers\SearchServiceProvider;
 use DNorteCore\Providers\SeoServiceProvider;
 use DNorteCore\Providers\ServiceProvider;
 use DNorteCore\Providers\WorkflowServiceProvider;
@@ -139,6 +140,7 @@ final class Application {
 			SeoServiceProvider::class,
 			MediaServiceProvider::class,
 			WorkflowServiceProvider::class,
+			SearchServiceProvider::class,
 		);
 
 		/** @var list<class-string<ServiceProvider>> $configured */

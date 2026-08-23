@@ -121,6 +121,20 @@ final class DatabaseManager {
 	}
 
 	/**
+	 * Compone un fragmento SQL ya escapado, sin ejecutarlo — el único caso legítimo
+	 * de exponer `wpdb::prepare()` sin que este método corra la consulta: filtros de
+	 * WordPress como `posts_search`/`posts_orderby` (ver Search\SearchQueryModifier)
+	 * esperan de vuelta un trozo de SQL para insertar en la consulta que arma
+	 * WP_Query, no un resultado. Sigue pasando por el mismo `prepare()` privado que
+	 * select()/statement(), así que `$wpdb` sigue sin tocarse fuera de esta clase.
+	 *
+	 * @param list<int|float|string> $bindings
+	 */
+	public function fragment( string $sql, array $bindings = array() ): ?string {
+		return $this->prepare( $sql, $bindings );
+	}
+
+	/**
 	 * wpdb::prepare() solo puede devolver null cuando detecta un error de
 	 * programación (marcadores de posición que no coinciden con los parámetros
 	 * dados): en ese caso la consulta está rota y no debe ejecutarse ni con ni sin

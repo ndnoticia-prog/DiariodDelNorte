@@ -16,6 +16,7 @@ declare(strict_types=1);
 namespace DNorteCore\Installer;
 
 use DNorteCore\Migrator\Contracts\Migration;
+use DNorteCore\Search\Fulltext\CreateSearchFulltextIndex;
 use DNorteCore\Workflow\Notes\CreateEditorialNotesTable;
 use DNorteCore\Workflow\Shifts\CreateShiftsTable;
 
@@ -28,6 +29,7 @@ final class MigrationRegistry {
 		return array(
 			new CreateEditorialNotesTable(),
 			new CreateShiftsTable(),
+			new CreateSearchFulltextIndex(),
 		);
 	}
 }
