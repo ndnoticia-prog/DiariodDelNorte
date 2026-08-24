@@ -451,12 +451,45 @@ mismos cinco espacios de alpha.12, modelo de datos nuevo.
       artículo siguen funcionando igual que en alpha.12; `debug.log` vacío en
       todo el recorrido.
 
+## v0.1.0-alpha.14 — Publicidad propia: estadísticas, evidencia, informes e historial
+
+Ampliación pedida a partir del panel de campañas real del cliente
+(ESTADÍSTICAS/ACCIONES con Desactivar/Subir evidencia/Generar informe/Borrar, y
+una pestaña Historial) sobre el modelo de campañas de alpha.13.
+
+- [x] Tipo de campaña "Imagen" (banner propio: URL de imagen + URL de destino).
+- [x] Impresiones/clics/CTR por campaña — script de seguimiento compartido
+      (`wp_footer`, excluye al equipo editorial), endpoint REST
+      (`Ads\CampaignEventController`), incremento atómico en
+      `CampaignRepository`.
+- [x] Activar/Desactivar de un clic (sin pasar por el formulario completo).
+- [x] "Subir evidencia" — adjunta capturas/comprobantes vía la Biblioteca de
+      medios nativa de WordPress.
+- [x] "Generar informe" — vista imprimible dentro del propio panel
+      (Imprimir/Guardar como PDF del navegador, sin PDF generado en servidor).
+- [x] Pestaña "Historial" (`Ads\CampaignHistoryRepository`, tabla
+      `dnorte_ad_campaign_history`) — quién hizo qué y cuándo a cada campaña,
+      conserva el nombre aunque la campaña se borre después.
+- [x] 10 pruebas unitarias nuevas (123 en total) y 12 de integración nuevas (72
+      en total). `composer run check` y `composer test:integration` en verde.
+- [x] **Bug real encontrado en la verificación del navegador**: los enlaces de
+      navegación del panel arrastraban los parámetros de una acción de
+      escritura ya ejecutada, re-ejecutándola en un clic posterior. Corregido
+      con un único punto de limpieza de URL (`AdsAdminPage::cleanBaseUrl()`).
+      Ver "Fixed" en `CHANGELOG.md`.
+- [x] Verificado en el WordPress real de desarrollo: flujo completo de una
+      campaña real (activar/desactivar, evidencia real subida y listada,
+      informe con todos los campos, impresión/clic simulados reflejados de
+      inmediato en "Estadísticas" con el formato exacto pedido), script de
+      seguimiento confirmado para un visitante anónimo y ausente para el
+      equipo editorial, `debug.log` vacío en todo el recorrido.
+
 ## Próximas versiones (por decidir)
 
 Alcance técnico restante, confirmado explícitamente por el cliente: IA — con la
 misma pregunta previa de si un plugin ya probado o una función nativa de
 WordPress lo resuelve sin construir nada nuevo (ver `docs/handoff-nd-platform.md`
 §8). El workflow editorial, el panel de turnos, la búsqueda interna, la
-analítica propia y la publicidad propia ya se cerraron (alpha.9–alpha.13). En lo
+analítica propia y la publicidad propia ya se cerraron (alpha.9–alpha.14). En lo
 estético: guía de marca real de Diario del Norte (sustituir el color de acento
 placeholder), y posible logo/isotipo en vez de branding solo textual.

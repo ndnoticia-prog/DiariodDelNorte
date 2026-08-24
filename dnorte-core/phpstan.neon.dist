@@ -21,6 +21,7 @@ parameters:
                 - src/Workflow/Shifts/ShiftRepository.php
                 - src/Analytics/Pageviews/PageviewRepository.php
                 - src/Ads/CampaignRepository.php
+                - src/Ads/CampaignHistoryRepository.php
         -
             # Mismo mensaje de phpstan-strict-rules, motivo distinto: WP_Query::get('s'),
             # WP_REST_Request::get_param('q'/'post_id'/'referrer') devuelven "mixed"
@@ -33,6 +34,7 @@ parameters:
                 - src/Search/InternalSearchController.php
                 - src/Search/SearchQueryModifier.php
                 - src/Analytics/PageviewController.php
+                - src/Ads/CampaignEventController.php
 
 # szepeviktor/phpstan-wordpress y phpstan/phpstan-strict-rules ya se incluyen
 # automáticamente vía phpstan/extension-installer (composer.json); incluirlos

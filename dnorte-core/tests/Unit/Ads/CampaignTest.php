@@ -70,6 +70,18 @@ final class CampaignTest extends TestCase {
 		self::assertFalse( $campaign->appliesToCategories( array() ) );
 	}
 
+	public function test_ctr_is_zero_without_any_impressions(): void {
+		$campaign = $this->makeCampaign();
+
+		self::assertSame( 0.0, $campaign->ctr() );
+	}
+
+	public function test_ctr_is_the_percentage_of_clicks_over_impressions(): void {
+		$campaign = $this->makeCampaign( impressions: 200, clicks: 3 );
+
+		self::assertSame( 1.5, $campaign->ctr() );
+	}
+
 	/**
 	 * @param list<string> $zones
 	 * @param list<string> $categories
@@ -79,9 +91,29 @@ final class CampaignTest extends TestCase {
 		array $zones = array( 'cabecera' ),
 		array $categories = array(),
 		?string $startsAt = null,
-		?string $endsAt = null
+		?string $endsAt = null,
+		int $impressions = 0,
+		int $clicks = 0
 	): Campaign {
-		return new Campaign( 1, 'Campaña de prueba', 'Anunciante', Campaign::TYPE_HTML, $enabled, 0, $zones, $categories, $startsAt, $endsAt, '<div>x</div>', '', '' );
+		return new Campaign(
+			1,
+			'Campaña de prueba',
+			'Anunciante',
+			Campaign::TYPE_HTML,
+			$enabled,
+			0,
+			$zones,
+			$categories,
+			$startsAt,
+			$endsAt,
+			'<div>x</div>',
+			'',
+			'',
+			'',
+			'',
+			$impressions,
+			$clicks
+		);
 	}
 
 	private function now(): DateTimeImmutable {

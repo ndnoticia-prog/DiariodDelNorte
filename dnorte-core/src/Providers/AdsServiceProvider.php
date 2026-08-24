@@ -4,7 +4,9 @@
  * inicio, hooks propios de dnorte-theme), los tres espacios de artículo (top
  * noticia/intermedio/final, todos vía el filtro `the_content` — ver
  * injectArticleAds()), el cargador de Google AdSense (una sola vez por página,
- * ver enqueueAdSenseLoader()) y el panel de administración.
+ * ver enqueueAdSenseLoader()), el script de seguimiento de impresiones/clics (ver
+ * renderTrackingScript()), el endpoint REST que los recibe y el panel de
+ * administración.
  *
  * CampaignRepository se resuelve de forma diferida (dentro de cada callback, no
  * aquí en boot()), mismo motivo documentado en Search/AnalyticsServiceProvider:
@@ -23,10 +25,12 @@ use DNorteCore\Admin\Contracts\RegistersAdminPages;
 use DNorteCore\Ads\AdSlotRenderer;
 use DNorteCore\Ads\AdsAdminPage;
 use DNorteCore\Ads\Campaign;
+use DNorteCore\Ads\CampaignEventController;
 use DNorteCore\Ads\CampaignRepository;
 use DNorteCore\Ads\ContentParagraphInjector;
 use DNorteCore\Config\Config;
 use DNorteCore\Hooks\HookManager;
+use DNorteCore\RestApi\Contracts\RegistersRoutes;
 
 final class AdsServiceProvider extends ServiceProvider {
 
@@ -37,8 +41,10 @@ final class AdsServiceProvider extends ServiceProvider {
 		$hooks->addAction( 'dnorte_theme/before_topbar', $this->renderCabecera( ... ), 10 );
 		$hooks->addAction( 'dnorte_theme/after_header', $this->renderInicio( ... ), 10 );
 		$hooks->addAction( 'wp_enqueue_scripts', $this->enqueueAdSenseLoader( ... ), 10 );
+		$hooks->addAction( 'wp_footer', $this->renderTrackingScript( ... ), 20 );
 		$hooks->addFilter( 'the_content', $this->injectArticleAds( ... ), 20, 1 );
 		$hooks->addFilter( 'dnorte_core/admin_pages', $this->addAdminPages( ... ), 10, 1 );
+		$hooks->addFilter( 'dnorte_core/rest_controllers', $this->addRestControllers( ... ), 10, 1 );
 	}
 
 	public function renderCabecera(): void {
@@ -110,6 +116,33 @@ final class AdsServiceProvider extends ServiceProvider {
 	}
 
 	/**
+	 * Script de seguimiento compartido (una sola vez por página, sin importar
+	 * cuántos espacios con campaña rendericen) — impresión al cargar la página
+	 * para cada `.dnorte-ad[data-campaign-id]` presente, clic delegado en
+	 * `document` (funciona también para el HTML de una campaña insertado después,
+	 * sin tener que enganchar un listener por elemento). Excluye al equipo
+	 * editorial (`current_user_can('edit_posts')`) — mismo criterio que
+	 * Analytics\PageviewBeaconRenderer, para no contaminar las estadísticas que
+	 * alimentan "Generar informe" con las propias vistas previas del equipo.
+	 * `navigator.sendBeacon()` en vez de `fetch()`: sigue enviándose aunque el
+	 * clic navegue a otra página de inmediato.
+	 */
+	public function renderTrackingScript(): void {
+		if ( current_user_can( 'edit_posts' ) ) {
+			return;
+		}
+
+		$impressionUrl = esc_url_raw( rest_url( 'dnorte/v1/ads/impression' ) );
+		$clickUrl      = esc_url_raw( rest_url( 'dnorte/v1/ads/click' ) );
+
+		printf(
+			'<script>(function(){if(!navigator.sendBeacon){return;}function post(u,id){navigator.sendBeacon(u,new Blob([JSON.stringify({campaign_id:parseInt(id,10)})],{type:"application/json"}));}var seen={};document.querySelectorAll(".dnorte-ad[data-campaign-id]").forEach(function(el){var id=el.getAttribute("data-campaign-id");if(seen[id]){return;}seen[id]=true;post(%s,id);});document.addEventListener("click",function(e){var el=e.target.closest(".dnorte-ad[data-campaign-id]");if(!el){return;}post(%s,el.getAttribute("data-campaign-id"));});})();</script>',
+			wp_json_encode( $impressionUrl ), // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- ya son URLs propias escapadas por esc_url_raw()+wp_json_encode(); contexto JS, no HTML.
+			wp_json_encode( $clickUrl )
+		);
+	}
+
+	/**
 	 * @param list<class-string<RegistersAdminPages>> $registrars
 	 * @return list<class-string<RegistersAdminPages>>
 	 */
@@ -117,6 +150,16 @@ final class AdsServiceProvider extends ServiceProvider {
 		$registrars[] = AdsAdminPage::class;
 
 		return $registrars;
+	}
+
+	/**
+	 * @param list<class-string<RegistersRoutes>> $controllers
+	 * @return list<class-string<RegistersRoutes>>
+	 */
+	public function addRestControllers( array $controllers ): array {
+		$controllers[] = CampaignEventController::class;
+
+		return $controllers;
 	}
 
 	/**

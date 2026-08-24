@@ -95,6 +95,43 @@ final class CampaignRepository {
 	}
 
 	/**
+	 * Incremento atómico (`clicks = clicks + 1`), no lectura-modificación-escritura:
+	 * evita perder eventos si dos beacons llegan casi a la vez (ver
+	 * Ads\CampaignEventController).
+	 */
+	public function recordImpression( int $id ): void {
+		$table = $this->database->table( 'ad_campaigns' );
+		$this->database->statement( "UPDATE {$table} SET impressions = impressions + 1 WHERE id = %d", array( $id ) );
+	}
+
+	public function recordClick( int $id ): void {
+		$table = $this->database->table( 'ad_campaigns' );
+		$this->database->statement( "UPDATE {$table} SET clicks = clicks + 1 WHERE id = %d", array( $id ) );
+	}
+
+	/**
+	 * Añade un id de adjunto (Biblioteca de medios) a la lista de evidencia de la
+	 * campaña, sin duplicarlo si ya estaba.
+	 */
+	public function addEvidence( int $id, int $attachmentId ): void {
+		$campaign = $this->find( $id );
+
+		if ( $campaign === null || in_array( $attachmentId, $campaign->evidenceIds, true ) ) {
+			return;
+		}
+
+		$table = $this->database->table( 'ad_campaigns' );
+		$this->database->update(
+			$table,
+			array(
+				'evidence_ids' => implode( ',', array( ...$campaign->evidenceIds, $attachmentId ) ),
+				'updated_at'   => gmdate( 'Y-m-d H:i:s' ),
+			),
+			array( 'id' => $id )
+		);
+	}
+
+	/**
 	 * @return array<string, mixed>
 	 */
 	private function toRow( Campaign $campaign ): array {
@@ -111,6 +148,8 @@ final class CampaignRepository {
 			'html'              => $campaign->html,
 			'adsense_client_id' => $campaign->adsenseClientId,
 			'adsense_slot_id'   => $campaign->adsenseSlotId,
+			'image_url'         => $campaign->imageUrl,
+			'link_url'          => $campaign->linkUrl,
 			'updated_at'        => gmdate( 'Y-m-d H:i:s' ),
 		);
 	}
@@ -132,7 +171,12 @@ final class CampaignRepository {
 			$row['ends_at'] !== null ? (string) $row['ends_at'] : null,
 			(string) $row['html'],
 			(string) $row['adsense_client_id'],
-			(string) $row['adsense_slot_id']
+			(string) $row['adsense_slot_id'],
+			(string) $row['image_url'],
+			(string) $row['link_url'],
+			(int) $row['impressions'],
+			(int) $row['clicks'],
+			array_map( 'intval', $this->splitList( (string) $row['evidence_ids'] ) )
 		);
 	}
 

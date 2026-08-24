@@ -8,6 +8,7 @@ declare(strict_types=1);
 namespace DNorteCore\Tests\Integration\Ads;
 
 use DNorteCore\Ads\AdsAdminPage;
+use DNorteCore\Ads\CampaignHistoryRepository;
 use DNorteCore\Ads\CampaignRepository;
 use DNorteCore\Config\Config;
 use DNorteCore\Database\DatabaseManager;
@@ -20,6 +21,7 @@ final class AdsAdminPageTest extends WP_UnitTestCase {
 
 		$page = new AdsAdminPage(
 			new CampaignRepository( new DatabaseManager( $wpdb ) ),
+			new CampaignHistoryRepository( new DatabaseManager( $wpdb ) ),
 			new Config( array( 'ads' => array( 'slots' => array( 'cabecera' => 'Cabecera' ) ) ) )
 		);
 

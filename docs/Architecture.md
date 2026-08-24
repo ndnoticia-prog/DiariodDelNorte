@@ -482,6 +482,57 @@ propio del v1 original.
 - **Etiqueta "Publicidad"** (`app.scss`, `.dnorte-ad::before`): transparencia
   hacia el visitante, criterio estándar de la industria — no es solo estética.
 
+### Estadísticas, evidencia, informes e historial (v0.1.0-alpha.14)
+
+Ampliación pedida a partir del panel de campañas real del cliente (columnas
+ESTADÍSTICAS/ACCIONES con Desactivar/Subir evidencia/Generar informe/Borrar, y
+una pestaña Historial):
+
+- **Impresiones/clics**: `Ads\CampaignEventController`
+  (`POST /wp-json/dnorte/v1/ads/impression`/`.../click`) recibe el beacon que
+  emite `AdsServiceProvider::renderTrackingScript()` — un único script compartido
+  por página (`wp_footer`), con `data-campaign-id` puesto por `AdSlotRenderer` en
+  cada `.dnorte-ad` y delegación de eventos (`document.addEventListener('click', ...)`)
+  en vez de un listener por anuncio. Excluye al equipo editorial
+  (`current_user_can('edit_posts')`), mismo criterio que
+  `Analytics\PageviewBeaconRenderer`, para que "Generar informe" no muestre las
+  propias vistas previas del equipo como si fueran lectores reales.
+  `CampaignRepository::recordImpression()`/`recordClick()` incrementan con
+  `UPDATE ... SET x = x + 1` (atómico), no lectura-modificación-escritura.
+  **Limitación deliberada** (mismo criterio que el resto de la analítica propia
+  de la plataforma): sin deduplicación ni detección de bots — un recuento
+  aproximado para uso propio, no una cifra verificada para facturar al
+  anunciante. Los clics dentro de una unidad de AdSense los cuenta y factura
+  Google, no dnorte-core.
+- **`Campaign::ctr()`**: porcentaje de clics por impresión (0 sin impresiones,
+  evita dividir entre cero) — el mismo dato que muestra la columna
+  "Estadísticas" ("767 impr. · 1 clics · 0.13% CTR").
+- **Evidencia**: `AdRepository::addEvidence()` (ahora `CampaignRepository`) añade
+  un id de adjunto de la Biblioteca de medios a `evidence_ids` (lista separada
+  por comas, mismo criterio que `zones`/`categories`) — sube el archivo con
+  `media_handle_upload()` nativo de WordPress en vez de una implementación
+  propia de subida de ficheros.
+- **"Generar informe"**: página imprimible dentro del propio panel (no un PDF
+  generado en servidor — evita sumar una dependencia nueva solo para esto). El
+  `@media print` de `AdsAdminPage::renderStyles()` oculta el menú/barra de
+  administración de WordPress por sus ids nativos (`#adminmenumain`,
+  `#wpadminbar`, ...) al imprimir/"Guardar como PDF" desde el navegador —
+  patrón habitual en plugins de WordPress para "vistas imprimibles" sin salir
+  de wp-admin.
+- **Historial** (`dnorte_ad_campaign_history`, `Ads\CampaignHistoryRepository`):
+  una fila por acción de escritura (creada/actualizada/activada/desactivada/
+  borrada/evidencia subida), con quién y cuándo. `campaign_name` se guarda como
+  copia, no solo `campaign_id`, para que el historial de una campaña ya borrada
+  siga siendo legible sin depender de un `JOIN` a una fila que ya no existe.
+- **Bug real encontrado en la verificación del navegador, no por ningún test**:
+  los enlaces "Nueva campaña"/pestañas construidos con `remove_query_arg()`
+  seguían arrastrando `dnorte_ads_action`/`id`/`_wpnonce` de la URL actual justo
+  después de ejecutar un "Activar"/"Desactivar"/"Borrar" — un clic posterior en
+  cualquiera de ellos volvía a ejecutar esa misma acción (con el mismo nonce,
+  todavía válido) en vez de solo navegar. Corregido centralizando todos esos
+  enlaces en `AdsAdminPage::cleanBaseUrl()`, que retira también los tres
+  parámetros de acción, no solo los de vista (`tab`/`edit`/`evidence`/`report`).
+
 ## `Admin\AdminPage::$parentSlug` — ver "Menú de administración"
 
 Con tres módulos de administración ya registrados (Turnos, Analítica,

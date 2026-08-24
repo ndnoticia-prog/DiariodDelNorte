@@ -46,6 +46,8 @@ final class MigrationRegistryTest extends WP_UnitTestCase {
 				'create_ads_table',
 				'drop_legacy_ads_table',
 				'create_ad_campaigns_table',
+				'add_campaign_stats_and_media_columns',
+				'create_ad_campaign_history_table',
 			),
 			$firstRun
 		);

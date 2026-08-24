@@ -93,6 +93,40 @@ final class CampaignRepositoryTest extends WP_UnitTestCase {
 		self::assertSame( 'Solo deportes', $winner->name );
 	}
 
+	public function test_record_impression_and_click_increment_atomically(): void {
+		global $wpdb;
+		$repository = new CampaignRepository( new DatabaseManager( $wpdb ) );
+
+		$id = $repository->save( $this->draft() );
+
+		$repository->recordImpression( $id );
+		$repository->recordImpression( $id );
+		$repository->recordImpression( $id );
+		$repository->recordClick( $id );
+
+		$saved = $repository->find( $id );
+
+		self::assertNotNull( $saved );
+		self::assertSame( 3, $saved->impressions );
+		self::assertSame( 1, $saved->clicks );
+	}
+
+	public function test_add_evidence_appends_without_duplicating(): void {
+		global $wpdb;
+		$repository = new CampaignRepository( new DatabaseManager( $wpdb ) );
+
+		$id = $repository->save( $this->draft() );
+
+		$repository->addEvidence( $id, 501 );
+		$repository->addEvidence( $id, 502 );
+		$repository->addEvidence( $id, 501 ); // Duplicado, no debe repetirse.
+
+		$saved = $repository->find( $id );
+
+		self::assertNotNull( $saved );
+		self::assertSame( array( 501, 502 ), $saved->evidenceIds );
+	}
+
 	/**
 	 * @param list<string> $zones
 	 * @param list<string> $categories

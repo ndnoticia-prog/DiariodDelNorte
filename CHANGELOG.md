@@ -2,6 +2,59 @@
 
 Formato basado en [Keep a Changelog](https://keepachangelog.com/es-ES/1.0.0/).
 
+## [Unreleased] — v0.1.0-alpha.14
+
+### Added
+
+- `dnorte-core`: gestión completa de campañas publicitarias, a partir del panel
+  real de campañas del cliente. **Tipo "Imagen"** (banner propio: URL de imagen
+  + URL de destino) además de HTML/AdSense. **Estadísticas**: impresiones/clics
+  por campaña (`Ads\CampaignEventController`, `POST /wp-json/dnorte/v1/ads/impression`/
+  `.../click`) y CTR calculado (`Campaign::ctr()`) — recogidas por un script de
+  seguimiento compartido (`AdsServiceProvider::renderTrackingScript()`, `wp_footer`,
+  excluye al equipo editorial, mismo criterio que `Analytics\PageviewBeaconRenderer`).
+  **Activar/Desactivar** de un clic, sin pasar por el formulario completo.
+  **Subir evidencia**: adjunta capturas/comprobantes a una campaña vía la
+  Biblioteca de medios nativa (`media_handle_upload()`). **Generar informe**:
+  vista imprimible con nombre/anunciante/estadísticas/evidencia
+  ("Imprimir/Guardar como PDF" del navegador, sin generar PDF en servidor).
+  **Pestaña "Historial"**: bitácora de quién hizo qué y cuándo a cada campaña
+  (`Ads\CampaignHistoryRepository`, tabla `dnorte_ad_campaign_history` —
+  conserva el nombre de la campaña aunque se borre después).
+- `dnorte-core`: `Ads\Migrations\AddCampaignStatsAndMediaColumns`
+  (`image_url`/`link_url`/`impressions`/`clicks`/`evidence_ids` en
+  `dnorte_ad_campaigns`) y `Ads\Migrations\CreateAdCampaignHistoryTable` —
+  migraciones nuevas sobre el esquema de `v0.1.0-alpha.13`, nunca una
+  reescritura de `CreateAdCampaignsTable`.
+- 10 pruebas unitarias nuevas (123 en total en `dnorte-core`) y 12 de
+  integración nuevas (72 en total).
+
+### Fixed
+
+- **`Ads\AdsAdminPage`: los enlaces "Nueva campaña"/pestañas seguían
+  arrastrando los parámetros de una acción de escritura ya ejecutada**
+  (`dnorte_ads_action`/`id`/`_wpnonce`) justo después de "Activar"/
+  "Desactivar"/"Borrar" — un clic posterior en cualquiera de ellos volvía a
+  ejecutar esa misma acción (nonce todavía válido) en vez de solo navegar.
+  Encontrado en la verificación en el navegador, no por ningún test.
+  Corregido con `AdsAdminPage::cleanBaseUrl()`, un único punto que limpia tanto
+  los parámetros de vista como los de acción, usado por todos los enlaces de
+  navegación del panel.
+
+### Verified
+
+- `composer run check` (0 errores PHPCS, 0 errores PHPStan nivel máximo, 123
+  pruebas unitarias) y `composer test:integration` (72 pruebas) en verde.
+- WordPress real de desarrollo: flujo completo de una campaña real —
+  Activar/Desactivar confirmado con el estado (pill verde/gris) y el historial
+  actualizándose; "Subir evidencia" con un adjunto real de la Biblioteca de
+  medios, listado correctamente; "Generar informe" con todos los campos y el
+  enlace de evidencia; impresión/clic simulados vía `curl` reflejados de
+  inmediato en la columna "Estadísticas" (formato idéntico al pedido: "2 impr.
+  · 1 clics · 50.00% CTR"); script de seguimiento confirmado en el HTML
+  servido a un visitante anónimo, ausente para el equipo editorial; `debug.log`
+  vacío en todo el recorrido.
+
 ## [Unreleased] — v0.1.0-alpha.13
 
 ### Changed
