@@ -49,6 +49,7 @@ final class MigrationRegistryTest extends WP_UnitTestCase {
 				'add_campaign_stats_and_media_columns',
 				'create_ad_campaign_history_table',
 				'add_extended_campaign_type_columns',
+				'create_newsletter_subscribers_table',
 			),
 			$firstRun
 		);

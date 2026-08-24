@@ -16,15 +16,16 @@ final class HomeContentProviderTest extends WP_UnitTestCase {
 		$content = ( new HomeContentProvider() )->content();
 
 		self::assertNull( $content['hero'] );
-		self::assertSame( array(), $content['heroThumbs'] );
-		self::assertSame( array(), $content['aside'] );
+		self::assertSame( array(), $content['heroSecondary'] );
 		self::assertSame( array(), $content['laGuajiraFeatured'] );
 		self::assertSame( array(), $content['laGuajiraList'] );
 		self::assertSame( array(), $content['judiciales'] );
 		self::assertSame( array(), $content['opinion'] );
-		self::assertNull( $content['editorial'] );
 		self::assertNull( $content['edicionImpresa'] );
-		self::assertSame( array(), $content['mostRead'] );
+		self::assertSame( '', $content['edicionImpresaPdfUrl'] );
+		self::assertSame( array(), $content['mostRead']['24h'] );
+		self::assertSame( array(), $content['mostRead']['7d'] );
+		self::assertSame( array(), $content['mostRead']['30d'] );
 		self::assertSame( array(), $content['newsGrid'] );
 	}
 
@@ -48,43 +49,26 @@ final class HomeContentProviderTest extends WP_UnitTestCase {
 		self::assertSame( $newestId, $content['hero']->ID );
 	}
 
-	public function test_content_splits_the_hero_group_between_hero_and_thumbs_without_overlap(): void {
-		self::factory()->post->create_many( 7 );
+	public function test_content_splits_the_hero_group_between_hero_and_two_secondary_posts(): void {
+		self::factory()->post->create_many( 3 );
 
 		$content = ( new HomeContentProvider() )->content();
 
 		self::assertNotNull( $content['hero'] );
-		self::assertCount( 6, $content['heroThumbs'] );
+		self::assertCount( 2, $content['heroSecondary'] );
 
-		$thumbIds = array_map( static fn ( $post ) => $post->ID, $content['heroThumbs'] );
-		self::assertNotContains( $content['hero']->ID, $thumbIds );
+		$secondaryIds = array_map( static fn ( $post ) => $post->ID, $content['heroSecondary'] );
+		self::assertNotContains( $content['hero']->ID, $secondaryIds );
 	}
 
-	public function test_content_aside_never_repeats_a_post_from_the_hero_group(): void {
-		self::factory()->post->create_many( 13 );
-
-		$content = ( new HomeContentProvider() )->content();
-
-		self::assertCount( 6, $content['aside'] );
-
-		$heroGroupIds = array_merge(
-			array( $content['hero']->ID ),
-			array_map( static fn ( $post ) => $post->ID, $content['heroThumbs'] )
-		);
-		$asideIds     = array_map( static fn ( $post ) => $post->ID, $content['aside'] );
-
-		self::assertEmpty( array_intersect( $heroGroupIds, $asideIds ) );
-	}
-
-	public function test_content_news_grid_excludes_the_hero_group_and_aside_but_not_category_posts(): void {
-		self::factory()->post->create_many( 30 );
+	public function test_content_news_grid_excludes_the_hero_group_but_not_category_posts(): void {
+		self::factory()->post->create_many( 20 );
 
 		$content = ( new HomeContentProvider() )->content();
 
 		$excludedIds = array_merge(
 			array( $content['hero']->ID ),
-			array_map( static fn ( $post ) => $post->ID, $content['heroThumbs'] ),
-			array_map( static fn ( $post ) => $post->ID, $content['aside'] )
+			array_map( static fn ( $post ) => $post->ID, $content['heroSecondary'] )
 		);
 		$newsGridIds = array_map( static fn ( $post ) => $post->ID, $content['newsGrid'] );
 
@@ -113,30 +97,63 @@ final class HomeContentProviderTest extends WP_UnitTestCase {
 		self::assertNotContains( $judicialesPost, $laGuajiraIds );
 	}
 
-	public function test_content_editorial_and_edicion_impresa_return_only_the_latest_post_in_each_category(): void {
-		$editorialId = self::factory()->category->create( array( 'slug' => 'editorial' ) );
-		$impresaId   = self::factory()->category->create( array( 'slug' => 'edicion-impresa' ) );
+	public function test_content_edicion_impresa_returns_only_the_latest_post_in_that_category(): void {
+		$impresaId = self::factory()->category->create( array( 'slug' => 'edicion-impresa' ) );
 
 		self::factory()->post->create(
 			array(
-				'post_category' => array( $editorialId ),
+				'post_category' => array( $impresaId ),
 				'post_date'     => '2020-01-01 00:00:00',
 			)
 		);
-		$newestEditorial = self::factory()->post->create(
+		$newestImpresa = self::factory()->post->create(
 			array(
-				'post_category' => array( $editorialId ),
+				'post_category' => array( $impresaId ),
 				'post_date'     => '2024-01-01 00:00:00',
 			)
 		);
-		$impresaPost     = self::factory()->post->create( array( 'post_category' => array( $impresaId ) ) );
 
 		$content = ( new HomeContentProvider() )->content();
 
-		self::assertNotNull( $content['editorial'] );
-		self::assertSame( $newestEditorial, $content['editorial']->ID );
 		self::assertNotNull( $content['edicionImpresa'] );
-		self::assertSame( $impresaPost, $content['edicionImpresa']->ID );
+		self::assertSame( $newestImpresa, $content['edicionImpresa']->ID );
+	}
+
+	/**
+	 * Bug real encontrado en la verificación del navegador con datos de
+	 * ejemplo: el post de "Edición impresa" se publica con fecha muy
+	 * reciente cada vez (es la referencia de portada del día), así que sin
+	 * esta exclusión terminaba colándose como hero o en "Más noticias" por
+	 * ser el post más nuevo, desplazando a una noticia real.
+	 */
+	public function test_content_never_uses_the_edicion_impresa_post_as_hero_or_in_the_news_grid(): void {
+		$impresaId   = self::factory()->category->create( array( 'slug' => 'edicion-impresa' ) );
+		$impresaPost = self::factory()->post->create(
+			array(
+				'post_category' => array( $impresaId ),
+				'post_date'     => '2030-01-01 00:00:00', // El más reciente con diferencia.
+			)
+		);
+		self::factory()->post->create_many( 5 );
+
+		$content = ( new HomeContentProvider() )->content();
+
+		self::assertNotSame( $impresaPost, $content['hero']->ID );
+
+		$heroSecondaryIds = array_map( static fn ( $post ) => $post->ID, $content['heroSecondary'] );
+		$newsGridIds      = array_map( static fn ( $post ) => $post->ID, $content['newsGrid'] );
+
+		self::assertNotContains( $impresaPost, $heroSecondaryIds );
+		self::assertNotContains( $impresaPost, $newsGridIds );
+	}
+
+	public function test_content_edicion_impresa_pdf_url_is_empty_without_an_attached_pdf(): void {
+		$impresaId = self::factory()->category->create( array( 'slug' => 'edicion-impresa' ) );
+		self::factory()->post->create( array( 'post_category' => array( $impresaId ) ) );
+
+		$content = ( new HomeContentProvider() )->content();
+
+		self::assertSame( '', $content['edicionImpresaPdfUrl'] );
 	}
 
 	public function test_content_does_not_include_draft_posts(): void {
@@ -158,6 +175,8 @@ final class HomeContentProviderTest extends WP_UnitTestCase {
 
 		$content = ( new HomeContentProvider() )->content();
 
-		self::assertCount( 3, $content['mostRead'] );
+		self::assertCount( 3, $content['mostRead']['24h'] );
+		self::assertCount( 3, $content['mostRead']['7d'] );
+		self::assertCount( 3, $content['mostRead']['30d'] );
 	}
 }

@@ -85,6 +85,13 @@ do_action( 'dnorte_theme/before_topbar' );
 		</div>
 
 		<div class="site-header__actions">
+			<a class="icon-button subscribe-link" href="#suscribete" aria-label="<?php esc_attr_e( 'Suscribirse al newsletter', 'dnorte-theme' ); ?>">
+				<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+					<path d="M18 8a6 6 0 1 0-12 0c0 7-3 9-3 9h18s-3-2-3-9" stroke-linecap="round" stroke-linejoin="round" />
+					<path d="M13.73 21a2 2 0 0 1-3.46 0" stroke-linecap="round" stroke-linejoin="round" />
+				</svg>
+			</a>
+
 			<button type="button" class="icon-button search-toggle" aria-expanded="false" aria-label="<?php esc_attr_e( 'Buscar', 'dnorte-theme' ); ?>">
 				<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
 					<circle cx="11" cy="11" r="7" />
@@ -122,6 +129,29 @@ do_action( 'dnorte_theme/before_topbar' );
 		?>
 	</div>
 </nav>
+
+<?php
+/**
+ * Segunda representación del mismo menú "primary" — solo de primer nivel
+ * (depth=1, así "Más" nunca imprime sus nueve hijos aquí) en una tira
+ * horizontal deslizable, siempre visible en móvil sin depender del botón ☰.
+ * El menú completo (con "Más" desplegado) sigue disponible detrás del botón
+ * ☰ (.main-navigation de arriba) para quien lo prefiera. WordPress no tiene
+ * problema en representar la misma ubicación de menú dos veces en la misma
+ * petición con argumentos distintos.
+ */
+wp_nav_menu(
+	array(
+		'theme_location'       => 'primary',
+		'container'            => 'nav',
+		'container_class'      => 'mobile-quick-nav',
+		'container_aria_label' => __( 'Categorías', 'dnorte-theme' ),
+		'menu_class'           => 'mobile-quick-nav__list',
+		'depth'                => 1,
+		'fallback_cb'          => false,
+	)
+);
+?>
 
 <?php
 /**

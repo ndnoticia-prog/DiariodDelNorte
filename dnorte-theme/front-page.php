@@ -1,11 +1,13 @@
 <?php
 /**
- * Portada del sitio — maqueta real pedida por el cliente (v0.1.0-alpha.17):
- * "Lo último" (hero + miniaturas + columna), La Guajira, Opinión, banner de
- * WhatsApp, Judiciales/Editorial/Lo más leído en tres columnas, y "Más
- * noticias" con "Cargar más". Todo el contenido viene de
- * DNorteTheme\Content\HomeContentProvider — esta plantilla solo decide qué
- * bloque imprimir con qué datos, sin ninguna consulta propia.
+ * Portada del sitio (v0.1.0-alpha.18: evolución editorial completa, hero de
+ * gran formato + jerarquía visual explícita): Hero → La Guajira → Judiciales →
+ * Opinión → Más noticias → Lo más leído → Edición Impresa → Newsletter.
+ * "Lo más leído" y "Edición impresa" deliberadamente después de "Más
+ * noticias" — no deben competir con el hero ni con las noticias principales.
+ * Todo el contenido viene de DNorteTheme\Content\HomeContentProvider — esta
+ * plantilla solo decide qué bloque imprimir con qué datos, sin ninguna
+ * consulta propia.
  *
  * @package DNorteTheme
  */
@@ -21,12 +23,11 @@ $content = ( new \DNorteTheme\Content\HomeContentProvider() )->content();
 	<?php if ( $content['hero'] instanceof WP_Post ) : ?>
 		<?php
 		get_template_part(
-			'template-parts/blocks/hero-carousel',
+			'template-parts/blocks/hero',
 			null,
 			array(
-				'hero'   => $content['hero'],
-				'thumbs' => $content['heroThumbs'],
-				'aside'  => $content['aside'],
+				'hero'      => $content['hero'],
+				'secondary' => $content['heroSecondary'],
 			)
 		);
 		?>
@@ -45,38 +46,21 @@ $content = ( new \DNorteTheme\Content\HomeContentProvider() )->content();
 	);
 	?>
 
+	<?php
+	get_template_part(
+		'template-parts/blocks/category-block',
+		null,
+		array(
+			'heading' => __( 'Judiciales', 'dnorte-theme' ),
+			'mode'    => 'dense',
+			'posts'   => $content['judiciales'],
+		)
+	);
+	?>
+
 	<?php if ( $content['opinion'] !== array() ) : ?>
 		<?php get_template_part( 'template-parts/blocks/opinion-strip', null, array( 'posts' => $content['opinion'] ) ); ?>
 	<?php endif; ?>
-
-	<?php get_template_part( 'template-parts/blocks/promo-banner' ); ?>
-
-	<div class="triptych">
-		<?php
-		get_template_part(
-			'template-parts/blocks/category-block',
-			null,
-			array(
-				'heading' => __( 'Judiciales', 'dnorte-theme' ),
-				'mode'    => 'dense',
-				'posts'   => $content['judiciales'],
-			)
-		);
-		?>
-
-		<?php
-		get_template_part(
-			'template-parts/blocks/editorial-column',
-			null,
-			array(
-				'editorial'      => $content['editorial'],
-				'edicionImpresa' => $content['edicionImpresa'],
-			)
-		);
-		?>
-
-		<?php get_template_part( 'template-parts/blocks/most-read', null, array( 'posts' => $content['mostRead'] ) ); ?>
-	</div>
 
 	<?php
 	get_template_part(
@@ -88,6 +72,21 @@ $content = ( new \DNorteTheme\Content\HomeContentProvider() )->content();
 		)
 	);
 	?>
+
+	<?php get_template_part( 'template-parts/blocks/most-read', null, array( 'mostRead' => $content['mostRead'] ) ); ?>
+
+	<?php
+	get_template_part(
+		'template-parts/blocks/print-edition',
+		null,
+		array(
+			'post'   => $content['edicionImpresa'],
+			'pdfUrl' => $content['edicionImpresaPdfUrl'],
+		)
+	);
+	?>
+
+	<?php get_template_part( 'template-parts/blocks/newsletter' ); ?>
 
 	<?php if ( $content['hero'] === null ) : ?>
 		<p><?php esc_html_e( 'Todavía no hay artículos publicados.', 'dnorte-theme' ); ?></p>

@@ -9,6 +9,8 @@
 
 declare(strict_types=1);
 
+use DNorteTheme\Support\RelativeDate;
+
 /** @var WP_Post $miniPost */
 $miniPost   = $args['post'];
 $stacked    = $args['stacked'] ?? false;
@@ -36,7 +38,7 @@ $category   = $categories[0] ?? null;
 		<?php endif; ?>
 		<span class="mini-card__title"><?php echo esc_html( get_the_title( $miniPost ) ); ?></span>
 		<time class="entry-date" datetime="<?php echo esc_attr( get_the_date( DATE_W3C, $miniPost ) ); ?>">
-			<?php echo esc_html( get_the_date( '', $miniPost ) ); ?>
+			<?php echo esc_html( RelativeDate::forPost( $miniPost ) ); ?>
 		</time>
 	</span>
 </a>

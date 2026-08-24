@@ -97,8 +97,14 @@ $category-colors: (
 	--space-3: 1rem;
 	--space-4: 1.5rem;
 	--space-5: 2.5rem;
+	--space-6: 4rem;
 
-	--radius: 3px;
+	// Un poco más generosos que antes (3px) — parte del giro hacia un
+	// tratamiento visual más "periódico premium" (menos cajas/bordes duros,
+	// ver el pedido explícito del cliente en v0.1.0-alpha.18), sin llegar a
+	// verse lúdico/redondeado en exceso.
+	--radius: 6px;
+	--radius-lg: 14px;
 	--shadow-sm: 0 1px 2px rgb(0 0 0 / 8%);
 	--shadow-md: 0 4px 16px rgb(0 0 0 / 12%);
 
@@ -128,6 +134,14 @@ $category-colors: (
 
 html {
 	-webkit-text-size-adjust: 100%;
+	scroll-behavior: smooth;
+	scroll-padding-top: 5.5rem; // Altura aprox. de topbar + cabecera + barra de categorías, para que #suscribete no quede tapado al saltar ahí.
+}
+
+@media (prefers-reduced-motion: reduce) {
+	html {
+		scroll-behavior: auto;
+	}
 }
 
 body {
@@ -225,7 +239,11 @@ img {
 		margin: 0 auto;
 		padding: var(--space-3);
 		display: grid;
-		grid-template-columns: 2.25rem 1fr 2.25rem;
+		// Tercera columna a "auto" (no un ancho fijo de un solo botón): son tres
+		// iconos (suscribirse/buscar/tema) desde v0.1.0-alpha.18, no uno — con un
+		// ancho fijo se salían de su columna y se solapaban con el logo. Bug real
+		// encontrado en la verificación en el navegador.
+		grid-template-columns: 2.25rem 1fr auto;
 		align-items: center;
 		gap: var(--space-3);
 
@@ -415,6 +433,46 @@ img {
 .primary-nav {
 	background: var(--color-accent);
 	border-top: 1px solid rgb(0 0 0 / 12%);
+}
+
+// Segunda representación del menú "primary", solo de primer nivel (ver
+// header.php) — tira horizontal deslizable con el dedo, siempre visible en
+// móvil sin depender de abrir el menú completo (☰). Oculta en escritorio: ahí
+// ya está la barra completa de .primary-nav.
+.mobile-quick-nav {
+	overflow-x: auto;
+	-webkit-overflow-scrolling: touch;
+	border-bottom: 1px solid var(--color-border);
+
+	@media (min-width: $breakpoint-md) {
+		display: none;
+	}
+
+	&__list {
+		list-style: none;
+		display: flex;
+		gap: var(--space-1);
+		margin: 0;
+		padding: var(--space-2) var(--space-3);
+		width: max-content;
+	}
+
+	a {
+		display: inline-block;
+		padding: 0.4em 0.9em;
+		border-radius: 999px;
+		background: var(--color-surface);
+		color: var(--color-text);
+		text-decoration: none;
+		font-weight: 700;
+		font-size: 0.8125rem;
+		white-space: nowrap;
+	}
+
+	.current-menu-item a {
+		background: var(--color-accent);
+		color: #fff;
+	}
 }
 
 .main-navigation {
@@ -667,199 +725,207 @@ img {
 .section-heading {
 	font-family: var(--font-headline);
 	font-weight: 800;
-	font-size: 1.375rem;
+	font-size: 1.625rem;
 	border-bottom: 3px solid var(--color-accent);
 	padding-bottom: var(--space-2);
-	margin: 0 0 var(--space-3);
+	margin: 0 0 var(--space-4);
 }
 
 // ---------------------------------------------------------------------------
-// "Lo último": ticker + hero + tira de miniaturas, todo sobre el mismo grupo
-// de artículos recientes (HomeContentProvider::heroCarousel()). Sin JS, cada
-// miniatura/flecha es un <a> normal a su propio artículo — con JS
-// (initHeroCarousel(), assets/js/app.js) el clic en una miniatura o flecha
-// además intercambia la imagen/título/kicker del hero visible sin recargar,
-// usando los data-* que ya trae marcados cada miniatura.
+// Hero de portada: la fotografía es la protagonista, con el texto (etiqueta/
+// titular/bajada/hora) superpuesto sobre un degradado oscuro — nunca un
+// bloque de texto aparte debajo de la imagen. Ocupa prácticamente todo el
+// ancho de .site-main; las dos noticias secundarias van al lado en escritorio
+// y debajo en móvil.
 // ---------------------------------------------------------------------------
 
-.hero-carousel {
-	margin-bottom: var(--space-5);
+.hero {
+	display: grid;
+	gap: var(--space-4);
+	margin-bottom: var(--space-6);
 
-	&__ticker {
-		display: flex;
-		align-items: center;
-		gap: var(--space-2);
-		background: var(--color-text);
-		color: var(--color-bg);
-		border-radius: var(--radius) var(--radius) 0 0;
-		padding: var(--space-2) var(--space-3);
+	@media (min-width: $breakpoint-lg) {
+		grid-template-columns: 2.1fr 1fr;
+		align-items: start;
+	}
+}
+
+.hero__main {
+	display: block;
+	color: inherit;
+	text-decoration: none;
+}
+
+.hero__media {
+	position: relative;
+	border-radius: var(--radius-lg);
+	overflow: hidden;
+	background: var(--color-surface);
+	aspect-ratio: 4 / 3;
+
+	@media (min-width: $breakpoint-sm) {
+		aspect-ratio: 16 / 10;
 	}
 
-	&__ticker-label {
-		flex-shrink: 0;
-		display: inline-flex;
-		align-items: center;
-		gap: 0.4em;
-		background: var(--color-accent);
-		color: #fff;
-		font-weight: 700;
-		font-size: 0.75rem;
-		text-transform: uppercase;
-		letter-spacing: 0.05em;
-		padding: 0.3em 0.7em;
-		border-radius: 999px;
-
-		&::before {
-			content: '';
-			width: 0.5em;
-			height: 0.5em;
-			border-radius: 50%;
-			background: #fff;
-		}
+	@media (min-width: $breakpoint-lg) {
+		aspect-ratio: 16 / 9;
 	}
 
-	&__ticker-title {
-		flex: 1;
-		min-width: 0;
-		overflow: hidden;
-		text-overflow: ellipsis;
-		white-space: nowrap;
-		font-size: 0.9375rem;
+	img {
+		width: 100%;
+		height: 100%;
+		object-fit: cover;
+	}
+}
 
-		a {
-			color: inherit;
-			text-decoration: none;
+.hero__scrim {
+	position: absolute;
+	inset: 0;
+	background: linear-gradient(0deg, rgb(0 0 0 / 82%) 0%, rgb(0 0 0 / 45%) 45%, rgb(0 0 0 / 0%) 75%);
+}
 
-			&:hover,
-			&:focus-visible {
-				text-decoration: underline;
-			}
-		}
+.hero__text {
+	position: absolute;
+	left: 0;
+	right: 0;
+	bottom: 0;
+	padding: var(--space-4);
+	color: #fff;
+
+	@media (min-width: $breakpoint-lg) {
+		padding: var(--space-5);
+		max-width: 42rem;
+	}
+}
+
+.hero__title {
+	font-size: clamp(1.75rem, 4.5vw, 3rem);
+	line-height: 1.08;
+	margin: var(--space-2) 0 var(--space-2);
+	color: #fff;
+
+	.hero__main:hover &,
+	.hero__main:focus-visible & {
+		text-decoration: underline;
+		text-decoration-color: var(--color-accent);
+		text-decoration-thickness: 3px;
+	}
+}
+
+.hero__dek {
+	font-size: 1.0625rem;
+	line-height: 1.5;
+	color: rgb(255 255 255 / 88%);
+	margin: 0 0 var(--space-2);
+	max-width: 56ch;
+}
+
+.hero__meta {
+	margin: 0;
+	font-size: 0.75rem;
+	font-weight: 700;
+	letter-spacing: 0.06em;
+	color: rgb(255 255 255 / 75%);
+}
+
+.hero__secondary {
+	display: grid;
+	gap: var(--space-3);
+
+	@media (max-width: #{$breakpoint-lg - 1px}) {
+		grid-template-columns: repeat(2, 1fr);
+	}
+}
+
+.hero__secondary-item {
+	display: flex;
+	gap: var(--space-3);
+	color: inherit;
+	text-decoration: none;
+
+	@media (max-width: #{$breakpoint-lg - 1px}) {
+		flex-direction: column;
+	}
+}
+
+.hero__secondary-media {
+	flex-shrink: 0;
+	width: 7rem;
+	aspect-ratio: 4 / 3;
+	border-radius: var(--radius);
+	overflow: hidden;
+	background: var(--color-surface);
+
+	@media (max-width: #{$breakpoint-lg - 1px}) {
+		width: 100%;
 	}
 
-	&__ticker-nav {
-		flex-shrink: 0;
-		display: flex;
-		gap: var(--space-1);
+	img {
+		width: 100%;
+		height: 100%;
+		object-fit: cover;
 	}
+}
 
-	&__ticker-btn {
-		appearance: none;
-		background: rgb(255 255 255 / 10%);
-		border: 0;
-		color: inherit;
-		width: 1.75rem;
-		height: 1.75rem;
-		border-radius: 50%;
-		cursor: pointer;
-		display: inline-flex;
-		align-items: center;
-		justify-content: center;
+.hero__secondary-body {
+	min-width: 0;
+}
 
-		&:hover,
-		&:focus-visible {
-			background: rgb(255 255 255 / 25%);
-		}
+.hero__secondary-title {
+	font-size: 1.0625rem;
+	line-height: 1.3;
+	margin: 0 0 var(--space-1);
 
-		svg {
-			width: 1rem;
-			height: 1rem;
-		}
+	.hero__secondary-item:hover &,
+	.hero__secondary-item:focus-visible & {
+		text-decoration: underline;
+		text-decoration-color: var(--color-accent);
 	}
+}
 
-	&__grid {
-		display: grid;
-		gap: var(--space-3);
-		background: var(--color-surface);
-		border: 1px solid var(--color-border);
-		border-top: 0;
-		border-radius: 0 0 var(--radius) var(--radius);
-		padding: var(--space-3);
+// Tarjeta compacta reutilizada en las listas secundarias de un bloque de
+// categoría (ej. La Guajira) — imagen pequeña + kicker + título + fecha.
+.mini-card {
+	display: flex;
+	gap: var(--space-2);
+	color: inherit;
+	text-decoration: none;
 
-		@media (min-width: $breakpoint-lg) {
-			grid-template-columns: 3fr 2fr;
-		}
-	}
-
-	&__main {
-		min-width: 0;
-	}
-
-	&__link {
-		display: block;
-		color: inherit;
-		text-decoration: none;
+	&--stacked {
+		flex-direction: column;
 	}
 
 	&__media {
+		flex-shrink: 0;
+		width: 4.5rem;
+		aspect-ratio: 1;
 		border-radius: var(--radius);
 		overflow: hidden;
-		margin-bottom: var(--space-3);
-		background: var(--color-bg);
-		aspect-ratio: 16 / 9;
-		position: relative;
+		background: var(--color-surface);
 
 		img {
 			width: 100%;
 			height: 100%;
 			object-fit: cover;
 		}
+	}
 
-		.kicker--pill {
-			position: absolute;
-			top: var(--space-2);
-			left: var(--space-2);
-		}
+	&--stacked &__media {
+		width: 100%;
+		aspect-ratio: 4 / 3;
 	}
 
 	&__title {
-		font-size: clamp(1.5rem, 3.5vw, 2.25rem);
+		font-size: 0.9375rem;
+		font-weight: 700;
 		margin: 0;
+		line-height: 1.3;
 
-		.hero-carousel__link:hover &,
-		.hero-carousel__link:focus-visible & {
+		&:hover,
+		&:focus-visible {
 			text-decoration: underline;
 			text-decoration-color: var(--color-accent);
 		}
-	}
-
-	&__thumbs {
-		list-style: none;
-		display: flex;
-		gap: var(--space-2);
-		margin: var(--space-3) 0 0;
-		padding: 0;
-		overflow-x: auto;
-	}
-
-	&__thumb {
-		flex-shrink: 0;
-		width: 4.5rem;
-
-		a {
-			display: block;
-			color: inherit;
-			text-decoration: none;
-		}
-
-		img {
-			width: 100%;
-			aspect-ratio: 1;
-			object-fit: cover;
-			border-radius: var(--radius);
-			border: 2px solid transparent;
-		}
-
-		&.is-active img {
-			border-color: var(--color-accent);
-		}
-	}
-
-	&__aside {
-		display: grid;
-		grid-template-columns: repeat(2, 1fr);
-		gap: var(--space-3);
-		align-content: start;
 	}
 }
 
@@ -915,8 +981,8 @@ img {
 
 .post-grid {
 	display: grid;
-	grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
-	gap: var(--space-4);
+	grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+	gap: var(--space-5);
 }
 
 .post-card {
@@ -972,12 +1038,12 @@ img {
 // ---------------------------------------------------------------------------
 
 .category-block {
-	margin-bottom: var(--space-5);
+	margin-bottom: var(--space-6);
 
 	&__featured {
 		display: grid;
-		grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
-		gap: var(--space-4);
+		grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+		gap: var(--space-5);
 		margin-bottom: var(--space-4);
 	}
 
@@ -1003,31 +1069,42 @@ img {
 // ---------------------------------------------------------------------------
 
 .opinion-strip {
-	margin-bottom: var(--space-5);
+	margin-bottom: var(--space-6);
 
 	&__track {
 		display: flex;
-		gap: var(--space-4);
+		gap: var(--space-3);
 		overflow-x: auto;
-		padding-bottom: var(--space-2);
+		padding: var(--space-1) var(--space-1) var(--space-2);
 		scroll-snap-type: x proximity;
 	}
 
 	&__card {
 		flex: 0 0 auto;
-		width: 13rem;
+		width: 16rem;
 		scroll-snap-align: start;
 		color: inherit;
 		text-decoration: none;
+		display: flex;
+		flex-direction: column;
+		background: var(--color-surface);
+		border-radius: var(--radius-lg);
+		padding: var(--space-4);
+
+		&:hover,
+		&:focus-visible {
+			box-shadow: var(--shadow-md);
+		}
 	}
 
 	&__avatar {
-		width: 4rem;
-		height: 4rem;
+		width: 4.5rem;
+		height: 4.5rem;
 		border-radius: 50%;
 		overflow: hidden;
-		margin-bottom: var(--space-2);
-		background: var(--color-surface);
+		margin-bottom: var(--space-3);
+		background: var(--color-bg);
+		box-shadow: 0 0 0 3px var(--color-bg);
 
 		img {
 			width: 100%;
@@ -1036,15 +1113,44 @@ img {
 		}
 	}
 
+	&__author {
+		font-family: var(--font-headline);
+		font-weight: 700;
+		font-size: 1.0625rem;
+		line-height: 1.2;
+	}
+
+	&__role {
+		display: block;
+		color: var(--color-accent);
+		font-size: 0.6875rem;
+		font-weight: 700;
+		letter-spacing: 0.06em;
+		margin: 0.2em 0 var(--space-2);
+	}
+
 	&__title {
 		font-size: 1rem;
-		margin: var(--space-1) 0 0;
+		font-weight: 700;
+		line-height: 1.35;
+		margin: 0 0 var(--space-1);
 
-		&:hover,
-		&:focus-visible {
+		.opinion-strip__card:hover &,
+		.opinion-strip__card:focus-visible & {
 			text-decoration: underline;
 			text-decoration-color: var(--color-accent);
 		}
+	}
+
+	&__excerpt {
+		color: var(--color-text-muted);
+		font-size: 0.875rem;
+		line-height: 1.5;
+		margin-bottom: var(--space-2);
+	}
+
+	.entry-date {
+		margin-top: auto;
 	}
 }
 
@@ -1094,84 +1200,47 @@ img {
 }
 
 // ---------------------------------------------------------------------------
-// Fila de tres columnas: Judiciales / Editorial / Lo más leído
+// "Lo más leído" — deliberadamente después de "Más noticias" en la portada
+// (ver front-page.php): no debe competir con el hero. Números grandes como
+// elemento visual, con pestañas 24h/7d/30d (las tres listas ya vienen en el
+// HTML, ver most-read.php — el filtro solo muestra/oculta, initMostReadFilter()
+// en assets/js/app.js).
 // ---------------------------------------------------------------------------
 
-.triptych {
-	display: grid;
-	gap: var(--space-5);
-	margin-bottom: var(--space-5);
-
-	@media (min-width: $breakpoint-lg) {
-		grid-template-columns: 1.4fr 1fr 1fr;
-	}
+.most-read-section {
+	margin-bottom: var(--space-6);
 }
 
-.editorial-column {
-	&__post {
-		display: block;
-		color: inherit;
-		text-decoration: none;
-		margin-bottom: var(--space-4);
-	}
+.most-read-tabs {
+	display: inline-flex;
+	gap: var(--space-1);
+	background: var(--color-surface);
+	border-radius: 999px;
+	padding: 0.25rem;
+	margin-bottom: var(--space-4);
 
-	&__media {
-		border-radius: var(--radius);
-		overflow: hidden;
-		aspect-ratio: 4 / 3;
-		background: var(--color-surface);
-		margin-bottom: var(--space-2);
+	&__button {
+		appearance: none;
+		background: none;
+		border: 0;
+		border-radius: 999px;
+		padding: 0.5em 1.1em;
+		font-family: var(--font-body);
+		font-weight: 700;
+		font-size: 0.8125rem;
+		color: var(--color-text-muted);
+		cursor: pointer;
 
-		img {
-			width: 100%;
-			height: 100%;
-			object-fit: cover;
+		&.is-active {
+			background: var(--color-bg);
+			color: var(--color-text);
+			box-shadow: var(--shadow-sm);
 		}
-	}
-
-	&__title {
-		font-size: 1.0625rem;
-		margin: 0 0 var(--space-1);
 
 		&:hover,
 		&:focus-visible {
-			text-decoration: underline;
-			text-decoration-color: var(--color-accent);
+			color: var(--color-text);
 		}
-	}
-
-	&__meta {
-		color: var(--color-text-muted);
-		font-size: 0.8125rem;
-	}
-
-	&__print {
-		display: flex;
-		gap: var(--space-3);
-		align-items: center;
-		border-top: 1px solid var(--color-border);
-		padding-top: var(--space-3);
-	}
-
-	&__print-cover {
-		flex-shrink: 0;
-		width: 4.5rem;
-		aspect-ratio: 3 / 4;
-		border-radius: var(--radius);
-		overflow: hidden;
-		background: var(--color-surface);
-		box-shadow: var(--shadow-sm);
-
-		img {
-			width: 100%;
-			height: 100%;
-			object-fit: cover;
-		}
-	}
-
-	&__print-caption {
-		font-size: 0.875rem;
-		color: var(--color-text-muted);
 	}
 }
 
@@ -1180,13 +1249,18 @@ img {
 	margin: 0;
 	padding: 0;
 	counter-reset: most-read;
+	max-width: 44rem;
+
+	&[hidden] {
+		display: none;
+	}
 
 	li {
 		counter-increment: most-read;
 		display: flex;
 		align-items: center;
-		gap: var(--space-3);
-		padding: var(--space-2) 0;
+		gap: var(--space-4);
+		padding: var(--space-3) 0;
 		border-bottom: 1px solid var(--color-border);
 
 		&:last-child {
@@ -1194,13 +1268,19 @@ img {
 		}
 	}
 
+	&__empty {
+		color: var(--color-text-muted);
+		font-size: 0.9375rem;
+	}
+
 	&__rank {
 		flex-shrink: 0;
 		font-family: var(--font-headline);
 		font-weight: 800;
-		font-size: 1.5rem;
+		font-size: 2.25rem;
+		line-height: 1;
 		color: var(--color-border);
-		width: 1.75rem;
+		width: 2.5rem;
 
 		&::before {
 			content: counter(most-read, decimal-leading-zero);
@@ -1209,7 +1289,7 @@ img {
 
 	&__media {
 		flex-shrink: 0;
-		width: 3.25rem;
+		width: 3.75rem;
 		aspect-ratio: 1;
 		border-radius: var(--radius);
 		overflow: hidden;
@@ -1223,10 +1303,10 @@ img {
 	}
 
 	&__title {
-		font-size: 0.9375rem;
+		font-size: 1rem;
 		font-weight: 700;
 		margin: 0;
-		line-height: 1.3;
+		line-height: 1.35;
 
 		&:hover,
 		&:focus-visible {
@@ -1237,12 +1317,103 @@ img {
 }
 
 // ---------------------------------------------------------------------------
+// Edición Impresa — miniatura grande de la portada del día + dos acciones.
+// Deliberadamente después de "Lo más leído": no compite con las noticias
+// principales.
+// ---------------------------------------------------------------------------
+
+.print-edition {
+	background: var(--color-surface);
+	border-radius: var(--radius-lg);
+	padding: var(--space-4);
+	margin-bottom: var(--space-6);
+
+	@media (min-width: $breakpoint-md) {
+		padding: var(--space-5);
+	}
+
+	&__inner {
+		display: grid;
+		gap: var(--space-4);
+		align-items: center;
+
+		@media (min-width: $breakpoint-sm) {
+			grid-template-columns: 12rem 1fr;
+			gap: var(--space-5);
+		}
+	}
+
+	&__cover {
+		display: block;
+		border-radius: var(--radius);
+		overflow: hidden;
+		box-shadow: var(--shadow-md);
+		aspect-ratio: 3 / 4;
+		max-width: 14rem;
+
+		img {
+			width: 100%;
+			height: 100%;
+			object-fit: cover;
+		}
+	}
+
+	&__title {
+		font-size: clamp(1.375rem, 3vw, 1.75rem);
+		margin: var(--space-1) 0 var(--space-1);
+	}
+
+	&__caption {
+		color: var(--color-text-muted);
+		font-size: 1rem;
+		margin: 0 0 var(--space-3);
+	}
+
+	&__actions {
+		display: flex;
+		flex-wrap: wrap;
+		gap: var(--space-2);
+	}
+
+	&__cta {
+		display: inline-flex;
+		align-items: center;
+		font-weight: 700;
+		font-size: 0.875rem;
+		text-decoration: none;
+		padding: 0.75em 1.5em;
+		border-radius: 999px;
+
+		&--primary {
+			background: var(--color-accent);
+			color: #fff;
+
+			&:hover,
+			&:focus-visible {
+				filter: brightness(0.95);
+			}
+		}
+
+		&--secondary {
+			background: transparent;
+			color: var(--color-text);
+			box-shadow: inset 0 0 0 2px var(--color-border);
+
+			&:hover,
+			&:focus-visible {
+				box-shadow: inset 0 0 0 2px var(--color-text);
+			}
+		}
+	}
+}
+
+// ---------------------------------------------------------------------------
 // "Más noticias" + Cargar más (assets/js/app.js: initLoadMore(), vía la REST
 // API nativa de WordPress — wp/v2/posts — sin endpoint propio nuevo)
 // ---------------------------------------------------------------------------
 
 .news-grid {
-	margin-bottom: var(--space-4);
+	margin-bottom: var(--space-6);
 }
 
 .load-more {
@@ -1457,6 +1628,97 @@ img {
 }
 
 // ---------------------------------------------------------------------------
+// Newsletter — envía a dnorte-core (Newsletter\NewsletterController), ver
+// newsletter.php.
+// ---------------------------------------------------------------------------
+
+.newsletter {
+	background: var(--color-text);
+	color: var(--color-bg);
+	border-radius: var(--radius-lg);
+	padding: var(--space-5) var(--space-4);
+	margin-bottom: var(--space-6);
+	text-align: center;
+
+	&__inner {
+		max-width: 34rem;
+		margin: 0 auto;
+	}
+
+	&__title {
+		font-size: clamp(1.375rem, 3vw, 1.75rem);
+		color: inherit;
+		margin: 0 0 var(--space-2);
+	}
+
+	&__subtitle {
+		color: rgb(255 255 255 / 75%);
+		margin: 0 0 var(--space-4);
+
+		:root[data-theme='dark'] & {
+			color: rgb(0 0 0 / 60%);
+		}
+	}
+
+	&__form {
+		display: flex;
+		flex-wrap: wrap;
+		gap: var(--space-2);
+		justify-content: center;
+	}
+
+	&__field {
+		flex: 1 1 16rem;
+		font: inherit;
+		font-size: 0.9375rem;
+		padding: 0.85em 1.1em;
+		border: 0;
+		border-radius: 999px;
+		background: var(--color-bg);
+		color: var(--color-text);
+
+		&:focus {
+			outline: 2px solid var(--color-accent);
+			outline-offset: 2px;
+		}
+	}
+
+	&__submit {
+		appearance: none;
+		border: 0;
+		border-radius: 999px;
+		background: var(--color-accent);
+		color: #fff;
+		font-family: var(--font-body);
+		font-weight: 700;
+		font-size: 0.9375rem;
+		padding: 0.85em 1.75em;
+		cursor: pointer;
+		flex-shrink: 0;
+
+		&:hover,
+		&:focus-visible {
+			filter: brightness(1.05);
+		}
+
+		&:disabled {
+			opacity: 0.6;
+			cursor: default;
+		}
+	}
+
+	&__status {
+		margin: var(--space-3) 0 0;
+		font-size: 0.875rem;
+		min-height: 1.25em;
+
+		&[data-state='error'] {
+			color: #ff8a8a;
+		}
+	}
+}
+
+// ---------------------------------------------------------------------------
 // Pie
 // ---------------------------------------------------------------------------
 
@@ -1471,17 +1733,9 @@ img {
 		padding: var(--space-4) var(--space-3);
 	}
 
-	.site-footer__top {
-		display: grid;
-		gap: var(--space-4);
-		padding-bottom: var(--space-4);
-
-		@media (min-width: $breakpoint-md) {
-			grid-template-columns: 1.4fr 1fr 1fr;
-		}
-	}
-
 	.site-footer__brand {
+		margin-bottom: var(--space-5);
+
 		img {
 			max-height: 40px;
 			width: auto;
@@ -1490,24 +1744,119 @@ img {
 
 		p {
 			color: var(--color-text-muted);
-			font-size: 0.8125rem;
-			max-width: 32ch;
+			font-size: 0.875rem;
+			max-width: 36ch;
 			margin: 0;
 		}
 	}
 
+	.site-footer__columns {
+		display: grid;
+		gap: 0;
+		padding-bottom: var(--space-4);
+		border-top: 1px solid var(--color-border);
+
+		@media (min-width: $breakpoint-md) {
+			grid-template-columns: repeat(4, 1fr);
+			gap: var(--space-4);
+			border-top: 0;
+		}
+	}
+
+	// Cada columna es un <details> nativo: en escritorio el resumen deja de
+	// comportarse como disclosure (sin flecha, sin clic) y el contenido queda
+	// siempre visible; en móvil el navegador ya sabe plegar/desplegar un
+	// <details> normal — "acordeón en móvil" sin una sola línea de JS propia.
+	.footer-column {
+		border-bottom: 1px solid var(--color-border);
+
+		@media (min-width: $breakpoint-md) {
+			border-bottom: 0;
+		}
+
+		&[open] > .site-footer__heading::after {
+			transform: rotate(180deg);
+		}
+	}
+
 	.site-footer__heading {
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
 		font-family: var(--font-body);
 		font-weight: 700;
 		font-size: 0.8125rem;
 		text-transform: uppercase;
 		letter-spacing: 0.05em;
-		margin: 0 0 var(--space-2);
+		padding: var(--space-3) 0;
+		cursor: pointer;
+		list-style: none;
+
+		&::-webkit-details-marker {
+			display: none;
+		}
+
+		&::marker {
+			content: '';
+		}
+
+		&::after {
+			content: '';
+			width: 0.5em;
+			height: 0.5em;
+			border-right: 2px solid currentcolor;
+			border-bottom: 2px solid currentcolor;
+			transform: rotate(45deg);
+			transition: transform 0.15s ease;
+		}
+
+		@media (min-width: $breakpoint-md) {
+			cursor: default;
+			pointer-events: none;
+			padding: 0 0 var(--space-2);
+
+			&::after {
+				display: none;
+			}
+		}
+	}
+
+	.footer-column > ul,
+	.footer-navigation ul,
+	.legal-navigation ul {
+		list-style: none;
+		margin: 0;
+		padding: 0 0 var(--space-3);
+		display: flex;
+		flex-direction: column;
+		gap: var(--space-2);
+
+		@media (min-width: $breakpoint-md) {
+			padding-bottom: 0;
+		}
+	}
+
+	.footer-column a,
+	.footer-navigation a,
+	.legal-navigation a {
+		color: var(--color-text-muted);
+		text-decoration: none;
+		font-size: 0.875rem;
+
+		&:hover,
+		&:focus-visible {
+			color: var(--color-accent);
+		}
 	}
 
 	.site-footer__social {
 		display: flex;
 		gap: var(--space-2);
+		padding-bottom: var(--space-3);
+
+		@media (min-width: $breakpoint-md) {
+			padding-bottom: 0;
+		}
 	}
 
 	.social-icon {
@@ -1533,40 +1882,8 @@ img {
 		}
 	}
 
-	.footer-navigation ul,
-	.legal-navigation ul {
-		list-style: none;
-		margin: 0;
-		padding: 0;
-		display: flex;
-		flex-wrap: wrap;
-		gap: var(--space-2) var(--space-4);
-	}
-
-	.footer-navigation a,
-	.legal-navigation a {
-		color: var(--color-text-muted);
-		text-decoration: none;
-		font-size: 0.875rem;
-
-		&:hover,
-		&:focus-visible {
-			color: var(--color-accent);
-		}
-	}
-
 	.site-footer__bottom {
-		display: flex;
-		flex-wrap: wrap;
-		align-items: center;
-		justify-content: space-between;
-		gap: var(--space-2);
-		border-top: 1px solid var(--color-border);
 		padding-top: var(--space-3);
-	}
-
-	.legal-navigation a {
-		font-size: 0.8125rem;
 	}
 
 	.site-info {

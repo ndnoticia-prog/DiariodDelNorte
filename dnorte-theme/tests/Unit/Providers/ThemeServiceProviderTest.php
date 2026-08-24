@@ -80,7 +80,7 @@ final class ThemeServiceProviderTest extends TestCase {
 
 		( new ThemeServiceProvider( new Container() ) )->registerMenus();
 
-		self::assertSame( array( 'primary', 'footer', 'footer_sites' ), array_keys( (array) $registered ) );
+		self::assertSame( array( 'primary', 'footer', 'footer_institutional' ), array_keys( (array) $registered ) );
 	}
 
 	public function test_register_image_sizes_registers_the_expected_sizes(): void {

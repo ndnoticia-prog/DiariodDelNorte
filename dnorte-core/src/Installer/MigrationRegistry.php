@@ -23,6 +23,7 @@ use DNorteCore\Ads\Migrations\CreateAdsTable;
 use DNorteCore\Ads\Migrations\DropLegacyAdsTable;
 use DNorteCore\Analytics\Pageviews\CreatePageviewsTable;
 use DNorteCore\Migrator\Contracts\Migration;
+use DNorteCore\Newsletter\Subscribers\CreateNewsletterSubscribersTable;
 use DNorteCore\Search\Fulltext\CreateSearchFulltextIndex;
 use DNorteCore\Workflow\Notes\CreateEditorialNotesTable;
 use DNorteCore\Workflow\Shifts\CreateShiftsTable;
@@ -50,6 +51,7 @@ final class MigrationRegistry {
 			new AddCampaignStatsAndMediaColumns(),
 			new CreateAdCampaignHistoryTable(),
 			new AddExtendedCampaignTypeColumns(),
+			new CreateNewsletterSubscribersTable(),
 		);
 	}
 }

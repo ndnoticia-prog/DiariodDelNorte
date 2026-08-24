@@ -724,6 +724,86 @@ Editorial + Edición Impresa, Lo más leído y "Más noticias" con "Cargar más"
   paquete es autónomo, ninguno depende de la estructura interna de
   `assets/` del otro).
 
+## Evolución editorial de la portada (v0.1.0-alpha.18)
+
+A partir de un segundo prompt del cliente ("periódico digital regional
+premium", no una plantilla genérica), evoluciona la portada de alpha.17 sin
+rehacerla desde cero — mismo `Content\HomeContentProvider`/sistema de
+bloques, cambia la composición y se suman dos módulos nuevos (newsletter,
+fecha relativa).
+
+- **Hero de foto completa**: reemplaza el grupo "Lo último" (ticker +
+  miniaturas) de alpha.17 — una sola noticia principal con el texto
+  (etiqueta/titular/bajada/hora) superpuesto a la fotografía sobre un
+  degradado oscuro (`.hero__scrim`), más dos noticias secundarias al lado.
+  `HomeContentProvider::HERO_TOTAL` bajó de 7 a 3 (hero + 2, ya no hero + 6
+  miniaturas); campo `heroSecondary` reemplaza a `heroThumbs`/`aside`.
+- **`Support\RelativeDate::forPost()`**: "Hace 2 horas" vía `human_time_diff()`
+  de WordPress core (ya localizado si el sitio tiene instalado el locale
+  es_CO/es_ES — `wp language core install es_CO --activate`, imprescindible
+  en el sitio real para que esto y el resto de cadenas de WordPress core
+  salgan en español) — reutilizado por el hero y las tarjetas de noticia.
+  Opinión y Edición Impresa siguen mostrando fecha absoluta a propósito.
+- **Judiciales pasó de un mosaico de 9 a 4** (lo que pidió esta vez el
+  cliente) y "Editorial" se retiró como bloque propio de portada — el listado
+  de secciones ahora es exactamente Hero/La Guajira/Judiciales/Opinión/Más
+  noticias/Lo más leído/Edición Impresa/Newsletter; la categoría `editorial`
+  se sigue sembrando (por si el equipo la usa en otro lugar) pero ya no tiene
+  una sección dedicada en la portada.
+- **Opinión con identidad de columnista**: retrato circular
+  (`get_avatar()`), nombre, cargo/nombre de columna (biografía del autor en
+  WordPress — el mismo campo sirve para "Director" o para el nombre de una
+  columna tipo "Entre el río y el mar", a discreción del equipo editorial) y
+  extracto — no una parrilla más de tarjetas.
+- **"Lo más leído" con tres ventanas de tiempo** (24h/7d/30d): las tres
+  listas se calculan y se imprimen todas en el HTML de una sola vez
+  (`HomeContentProvider::mostReadByWindow()`); el filtro en pantalla
+  (`initMostReadFilter()`, `assets/js/app.js`) solo muestra/oculta con
+  `[hidden]`, sin volver a pedir nada al servidor — evita sumar un endpoint
+  REST nuevo solo para esto. Deliberadamente después de "Más noticias" en la
+  portada, nunca compite con el hero.
+- **Edición Impresa reforzada**: portada más grande + dos acciones ("Ver
+  edición digital" al propio artículo, "Descargar PDF" al primer PDF
+  adjunto al post en la Biblioteca de medios — `firstAttachedPdfUrl()`, sin
+  botón si no hay ninguno). **Excluida de los pools de "más recientes"**
+  (`category__not_in` en `recentPosts()`): al publicarse con fecha muy
+  reciente cada vez, sin esto se colaba como hero o en "Más noticias" por
+  ser el post más nuevo, desplazando una noticia real — bug real encontrado
+  en la verificación con datos de ejemplo, cubierto por
+  `HomeContentProviderTest::test_content_never_uses_the_edicion_impresa_post_as_hero_or_in_the_news_grid`.
+- **Newsletter real, no un formulario decorativo**: `dnorte-core` suma un
+  módulo nuevo completo — `Newsletter\Subscribers\NewsletterSubscriberRepository`
+  (tabla propia, UNIQUE en email para deduplicar), `Newsletter\NewsletterController`
+  (`POST /wp-json/dnorte/v1/newsletter/subscribe`, valida con `is_email()`) y
+  `Newsletter\NewsletterAdminPage` (panel de solo lectura con el conteo y los
+  últimos 200 suscriptores) — mismo patrón que Analítica. El formulario de
+  portada (`newsletter.php`) envía por `fetch()` (`initNewsletterForm()`);
+  sin JS, el `<form>` ya apunta a esa misma URL con `method="post"` normal.
+- **Navegación móvil de dos niveles**: `header.php` representa la misma
+  ubicación de menú `primary` dos veces — la de siempre (`.main-navigation`,
+  completa, con "Más" desplegado, detrás del botón ☰) y una nueva
+  (`.mobile-quick-nav`, `depth=1` para que "Más" nunca imprima sus nueve
+  hijos ahí) en una tira horizontal siempre visible en móvil. WordPress no
+  tiene problema en renderizar la misma ubicación dos veces en la misma
+  petición con argumentos distintos. Un botón nuevo (🔔, `#suscribete`) enlaza
+  directo a la sección de newsletter.
+- **Pie de página de cuatro columnas** (Secciones/Institucional/Legal/Redes
+  sociales) — cada una es un `<details>` nativo: en escritorio el CSS fuerza
+  el resumen siempre abierto (`pointer-events: none`, sin flecha); en móvil
+  el navegador ya sabe plegar/desplegar un `<details>` normal — "acordeón en
+  móvil" sin una sola línea de JS propia. "Secciones" enlaza directo a las
+  siete categorías reales (no un menú aparte que sincronizar a mano);
+  "Institucional" reutiliza la ubicación de menú que antes se llamaba
+  `footer_sites` (renombrada — ya no existe el concepto "nuestros sitios" de
+  alpha.17); "Legal" reutiliza la ubicación `footer` de siempre. Cualquier
+  columna sin datos configurados simplemente no se imprime.
+- **Bug real de layout encontrado en la verificación móvil**: la tercera
+  columna de `.site-header__inner` tenía un ancho fijo de un solo botón
+  (`2.25rem`) desde alpha.17, pero ahora son tres iconos (🔔/buscar/tema) —
+  se salían de su columna y se solapaban con el logo en pantallas angostas.
+  Corregido con `grid-template-columns: 2.25rem 1fr auto` (columna de
+  acciones a ancho de contenido, no fijo).
+
 ## `Admin\AdminPage::$parentSlug` — ver "Menú de administración"
 
 Con tres módulos de administración ya registrados (Turnos, Analítica,

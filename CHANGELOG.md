@@ -2,6 +2,52 @@
 
 Formato basado en [Keep a Changelog](https://keepachangelog.com/es-ES/1.0.0/).
 
+## [Unreleased] — v0.1.0-alpha.18
+
+### Added
+
+- `dnorte-theme`: evolución editorial de la portada — hero de foto completa
+  con texto superpuesto (etiqueta/titular/bajada/hora relativa) + dos
+  secundarias, Opinión con identidad de columnista (retrato, cargo/nombre de
+  columna, extracto), "Lo más leído" con tres ventanas de tiempo (24h/7d/
+  30d) movido después de "Más noticias", Edición Impresa reforzada (portada
+  grande + "Ver edición digital"/"Descargar PDF"), navegación móvil de dos
+  niveles (menú completo tras ☰ + tira horizontal siempre visible) y pie de
+  página de cuatro columnas con acordeón nativo en móvil (`<details>`, sin
+  JS propio).
+- `dnorte-theme`: `Support\RelativeDate` — "Hace 2 horas" vía
+  `human_time_diff()` de WordPress core.
+- `dnorte-core`: módulo Newsletter completo —
+  `Newsletter\Subscribers\NewsletterSubscriberRepository` (tabla propia,
+  deduplicada), `Newsletter\NewsletterController`
+  (`POST /wp-json/dnorte/v1/newsletter/subscribe`) y
+  `Newsletter\NewsletterAdminPage` (panel de solo lectura). El formulario de
+  portada envía un correo real, guardado de verdad — no un formulario
+  decorativo.
+
+### Fixed
+
+- `dnorte-theme`: Edición Impresa se colaba como hero o en "Más noticias"
+  por publicarse siempre con fecha muy reciente — excluida ahora de los
+  pools de "más recientes" (`category__not_in`).
+- `dnorte-theme`: la columna de acciones de la cabecera (buscar/tema) tenía
+  un ancho fijo pensado para un solo botón; al sumar el botón de
+  suscripción se salían de su columna y se solapaban con el logo en móvil.
+
+### Verified
+
+- `composer run check` (0 errores PHPCS/PHPStan) en `dnorte-core` (131
+  pruebas unitarias, 16 nuevas de Newsletter) y `dnorte-theme` (4 pruebas
+  unitarias) en verde; `composer test:integration` en verde en ambos (86 en
+  `dnorte-core`, 16 en `dnorte-theme`).
+- WordPress real de desarrollo, con el locale es_CO activo: portada completa
+  verificada visualmente con datos de ejemplo realistas (titulares reales de
+  La Guajira/Riohacha/Maicao, seis columnistas de Opinión con foto/cargo/
+  extracto), formulario de newsletter probado en vivo (correo guardado en la
+  base de datos, visible en el panel de administración), vista móvil con los
+  tres iconos de cabecera correctamente alineados, `debug.log` vacío en todo
+  el recorrido.
+
 ## [Unreleased] — v0.1.0-alpha.17
 
 ### Added

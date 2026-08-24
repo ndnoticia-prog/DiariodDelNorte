@@ -60,9 +60,9 @@ final class ThemeServiceProvider extends ServiceProvider {
 	public function registerMenus(): void {
 		register_nav_menus(
 			array(
-				'primary'      => __( 'Menú principal', 'dnorte-theme' ),
-				'footer'       => __( 'Pie de página — legal', 'dnorte-theme' ),
-				'footer_sites' => __( 'Pie de página — nuestros sitios', 'dnorte-theme' ),
+				'primary'              => __( 'Menú principal', 'dnorte-theme' ),
+				'footer'               => __( 'Pie de página — legal', 'dnorte-theme' ),
+				'footer_institutional' => __( 'Pie de página — institucional', 'dnorte-theme' ),
 			)
 		);
 	}
@@ -123,6 +123,8 @@ final class ThemeServiceProvider extends ServiceProvider {
 			'dnorte_social_facebook'  => __( 'Facebook (URL)', 'dnorte-theme' ),
 			'dnorte_social_x'         => __( 'X / Twitter (URL)', 'dnorte-theme' ),
 			'dnorte_social_instagram' => __( 'Instagram (URL)', 'dnorte-theme' ),
+			'dnorte_social_youtube'   => __( 'YouTube (URL)', 'dnorte-theme' ),
+			'dnorte_social_tiktok'    => __( 'TikTok (URL)', 'dnorte-theme' ),
 		) as $setting => $label ) {
 			$wp_customize->add_setting( $setting, array( 'default' => '' ) );
 			$wp_customize->add_control(

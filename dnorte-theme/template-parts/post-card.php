@@ -8,6 +8,8 @@
 
 declare(strict_types=1);
 
+use DNorteTheme\Support\RelativeDate;
+
 /** @var WP_Post $cardPost */
 $cardPost   = $args['post'];
 $categories = get_the_category( $cardPost->ID );
@@ -36,7 +38,7 @@ $categories = get_the_category( $cardPost->ID );
 		<div class="post-card__body">
 			<h3 class="post-card__title"><?php echo esc_html( get_the_title( $cardPost ) ); ?></h3>
 			<time class="entry-date" datetime="<?php echo esc_attr( get_the_date( DATE_W3C, $cardPost ) ); ?>">
-				<?php echo esc_html( get_the_date( '', $cardPost ) ); ?>
+				<?php echo esc_html( RelativeDate::forPost( $cardPost ) ); ?>
 			</time>
 		</div>
 	</a>

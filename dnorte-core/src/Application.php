@@ -27,6 +27,7 @@ use DNorteCore\Providers\AdsServiceProvider;
 use DNorteCore\Providers\AnalyticsServiceProvider;
 use DNorteCore\Providers\CoreServiceProvider;
 use DNorteCore\Providers\MediaServiceProvider;
+use DNorteCore\Providers\NewsletterServiceProvider;
 use DNorteCore\Providers\RestApiServiceProvider;
 use DNorteCore\Providers\SearchServiceProvider;
 use DNorteCore\Providers\SeoServiceProvider;
@@ -145,6 +146,7 @@ final class Application {
 			SearchServiceProvider::class,
 			AnalyticsServiceProvider::class,
 			AdsServiceProvider::class,
+			NewsletterServiceProvider::class,
 		);
 
 		/** @var list<class-string<ServiceProvider>> $configured */

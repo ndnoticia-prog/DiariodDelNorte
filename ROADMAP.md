@@ -568,6 +568,45 @@ publicitarios ya definidos (alpha.12).
       en vivo, fuentes autoalojadas confirmadas cargando sin 404, `debug.log`
       vacío en todo el recorrido.
 
+## v0.1.0-alpha.18 — Evolución editorial de la portada: hero de foto completa, newsletter real y navegación móvil de dos niveles
+
+Segunda vuelta sobre la portada de alpha.17 a partir de un prompt de diseño
+mucho más detallado del cliente ("periódico digital regional premium, no una
+plantilla genérica") — evoluciona la composición sin rehacer el sistema de
+bloques desde cero.
+
+- [x] Hero de foto completa (texto superpuesto sobre la imagen) + dos
+      secundarias, reemplaza el grupo "Lo último" (ticker + miniaturas) de
+      alpha.17.
+- [x] `Support\RelativeDate` — "Hace 2 horas" en el hero y las tarjetas de
+      noticia, vía `human_time_diff()` de WordPress core.
+- [x] Opinión con identidad de columnista (retrato, cargo/nombre de
+      columna, extracto) — no otra parrilla de tarjetas.
+- [x] "Lo más leído" con tres ventanas de tiempo (24h/7d/30d) y movido
+      después de "Más noticias" — nunca compite con el hero.
+- [x] Edición Impresa reforzada (portada grande + "Ver edición digital"/
+      "Descargar PDF") y excluida de los pools de "más recientes" (bug real
+      encontrado: se colaba como hero por publicarse siempre reciente).
+- [x] Newsletter real — `dnorte-core` suma un módulo completo (tabla,
+      endpoint REST, panel de administración); el formulario de portada
+      guarda un correo real, no es decorativo.
+- [x] Navegación móvil de dos niveles: menú completo tras ☰ + tira
+      horizontal siempre visible con las categorías de primer nivel.
+- [x] Pie de página de cuatro columnas (Secciones/Institucional/Legal/Redes
+      sociales), acordeón nativo en móvil sin JS propio (`<details>`).
+- [x] **Bug real de layout encontrado en la verificación móvil**: la
+      columna de acciones de la cabecera tenía ancho fijo para un solo
+      botón; al sumar el de suscripción, se solapaban con el logo.
+      Corregido. Ver "Fixed" en `CHANGELOG.md`.
+- [x] `composer run check` y `composer test:integration` en verde en
+      `dnorte-core` (131 unitarias/86 integración, 16 nuevas de Newsletter) y
+      `dnorte-theme` (4 unitarias/16 integración).
+- [x] Verificado en el WordPress real de desarrollo con el locale es_CO
+      activo: portada completa con datos de ejemplo realistas (titulares de
+      La Guajira/Riohacha/Maicao, seis columnistas reales), newsletter
+      probado en vivo de punta a punta, vista móvil corregida, `debug.log`
+      vacío en todo el recorrido.
+
 ## Próximas versiones (por decidir)
 
 **IA: descartada.** Estaba en el alcance técnico original, pero el cliente

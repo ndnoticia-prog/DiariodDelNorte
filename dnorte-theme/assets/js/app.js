@@ -4,12 +4,14 @@ import '../scss/app.scss';
 // inline en header.php (debe ejecutarse antes del primer paint, así que no
 // puede depender de este bundle, que carga después) — aquí va el resto de la
 // interacción posterior a la carga: tema oscuro, menú móvil, buscador
-// colapsable, el carrusel de "Lo último" y "Cargar más".
+// colapsable, el filtro de "Lo más leído", el formulario del newsletter y
+// "Cargar más".
 //
 // Todo aquí es progresivo: sin JS, el menú queda desplegado siempre, el
-// buscador visible siempre, cada miniatura del hero es un <a> normal a su
-// propio artículo, y el botón "Cargar más" simplemente no responde — nada se
-// rompe, solo se pierde la interacción de un clic.
+// buscador visible siempre, "Lo más leído" muestra solo la pestaña "24
+// horas" (la primera lista sin [hidden] en el HTML), el newsletter hace un
+// POST normal de formulario, y el botón "Cargar más" simplemente no
+// responde — nada se rompe, solo se pierde la interacción de un clic.
 
 (function () {
 	'use strict';
@@ -82,102 +84,120 @@ import '../scss/app.scss';
 		});
 	}
 
-	// Cada miniatura/flecha ya es un <a> normal a su propio artículo (funciona sin
-	// JS); aquí solo se añade el intercambio en vivo del hero visible, leyendo los
-	// data-* que trae cada miniatura — sin volver a pedir nada al servidor.
-	function initHeroCarousel() {
-		var carousel = document.querySelector('.hero-carousel');
+	// "Más" en la tira horizontal de móvil (mobile-quick-nav) no tiene destino
+	// propio (no es una categoría real, ver DefaultContentSeeder) — en vez de
+	// dejar que su href="#" no haga nada, abre el menú completo (☰), que sí
+	// trae sus nueve subcategorías.
+	function initMobileQuickNavMore() {
+		var quickNav = document.querySelector('.mobile-quick-nav');
+		var navToggle = document.querySelector('.nav-toggle');
+		var nav = document.getElementById('site-navigation');
 
-		if (!carousel) {
+		if (!quickNav || !navToggle || !nav) {
 			return;
 		}
 
-		var thumbs = Array.prototype.slice.call(carousel.querySelectorAll('[data-hero-id]'));
+		var moreLink = quickNav.querySelector('.menu-item-has-children > a');
 
-		if (thumbs.length < 2) {
+		if (!moreLink) {
 			return;
 		}
 
-		var mainLink = carousel.querySelector('[data-hero-main]');
-		var titleEl = carousel.querySelector('[data-hero-title]');
-		var kickerEl = carousel.querySelector('[data-hero-kicker]');
-		var imgEl = carousel.querySelector('[data-hero-img]');
-		var tickerEl = carousel.querySelector('[data-hero-ticker] a');
-		var current = 0;
+		moreLink.addEventListener('click', function (event) {
+			event.preventDefault();
+			nav.classList.add('is-open');
+			navToggle.setAttribute('aria-expanded', 'true');
+			navToggle.scrollIntoView({ block: 'start', behavior: 'smooth' });
+		});
+	}
 
-		function applyThumb(index) {
-			var thumb = thumbs[index];
+	// Las tres listas (24h/7d/30d) ya vienen en el HTML (most-read.php) — el
+	// filtro solo muestra/oculta con [hidden], sin volver a pedir nada al
+	// servidor.
+	function initMostReadFilter() {
+		var tabsContainer = document.querySelector('[data-most-read-tabs]');
 
-			if (!thumb) {
-				return;
-			}
-
-			current = index;
-
-			var href = thumb.getAttribute('href');
-			var title = thumb.getAttribute('data-hero-title') || '';
-			var category = thumb.getAttribute('data-hero-category') || '';
-			var categorySlug = thumb.getAttribute('data-hero-category-slug') || '';
-			var image = thumb.getAttribute('data-hero-image') || '';
-
-			if (mainLink) {
-				mainLink.setAttribute('href', href);
-			}
-
-			if (tickerEl) {
-				tickerEl.textContent = title;
-				tickerEl.setAttribute('href', href);
-			}
-
-			if (titleEl) {
-				titleEl.textContent = title;
-			}
-
-			if (kickerEl) {
-				if (category) {
-					kickerEl.textContent = category;
-					kickerEl.setAttribute('data-category', categorySlug);
-					kickerEl.hidden = false;
-				} else {
-					kickerEl.hidden = true;
-				}
-			}
-
-			if (imgEl && image) {
-				imgEl.setAttribute('src', image);
-				imgEl.setAttribute('alt', title);
-			}
-
-			thumbs.forEach(function (thumbLink) {
-				var item = thumbLink.closest('.hero-carousel__thumb');
-
-				if (item) {
-					item.classList.toggle('is-active', thumbLink === thumb);
-				}
-			});
+		if (!tabsContainer) {
+			return;
 		}
 
-		thumbs.forEach(function (thumb, index) {
-			thumb.addEventListener('click', function (event) {
-				event.preventDefault();
-				applyThumb(index);
+		var tabs = Array.prototype.slice.call(tabsContainer.querySelectorAll('[data-most-read-tab]'));
+		var panels = Array.prototype.slice.call(document.querySelectorAll('[data-most-read-panel]'));
+
+		tabs.forEach(function (tab) {
+			tab.addEventListener('click', function () {
+				var target = tab.getAttribute('data-most-read-tab');
+
+				tabs.forEach(function (otherTab) {
+					var isActive = otherTab === tab;
+
+					otherTab.classList.toggle('is-active', isActive);
+					otherTab.setAttribute('aria-selected', isActive ? 'true' : 'false');
+				});
+
+				panels.forEach(function (panel) {
+					panel.hidden = panel.getAttribute('data-most-read-panel') !== target;
+				});
 			});
 		});
+	}
 
-		var prevBtn = carousel.querySelector('[data-hero-prev]');
-		var nextBtn = carousel.querySelector('[data-hero-next]');
+	// Envía a POST /wp-json/dnorte/v1/newsletter/subscribe (dnorte-core,
+	// Newsletter\NewsletterController) — un correo real, guardado de verdad.
+	// Sin JS, el <form> ya apunta ahí como action con method="post" normal.
+	function initNewsletterForm() {
+		var form = document.querySelector('[data-newsletter-form]');
+		var status = document.querySelector('[data-newsletter-status]');
 
-		if (prevBtn) {
-			prevBtn.addEventListener('click', function () {
-				applyThumb((current - 1 + thumbs.length) % thumbs.length);
-			});
+		if (!form) {
+			return;
 		}
 
-		if (nextBtn) {
-			nextBtn.addEventListener('click', function () {
-				applyThumb((current + 1) % thumbs.length);
-			});
-		}
+		form.addEventListener('submit', function (event) {
+			event.preventDefault();
+
+			var field = form.querySelector('.newsletter__field');
+			var submit = form.querySelector('.newsletter__submit');
+			var email = field ? field.value : '';
+
+			if (submit) {
+				submit.disabled = true;
+			}
+
+			fetch(form.getAttribute('action'), {
+				method: 'POST',
+				headers: { 'Content-Type': 'application/json' },
+				body: JSON.stringify({ email: email }),
+			})
+				.then(function (response) {
+					return response.json().then(function (data) {
+						return { ok: response.ok, data: data };
+					});
+				})
+				.then(function (result) {
+					if (!status) {
+						return;
+					}
+
+					status.textContent = result.data && result.data.message ? result.data.message : '';
+					status.setAttribute('data-state', result.ok ? 'success' : 'error');
+
+					if (result.ok && field) {
+						field.value = '';
+					}
+				})
+				.catch(function () {
+					if (status) {
+						status.textContent = 'No se pudo enviar. Intenta de nuevo en un momento.';
+						status.setAttribute('data-state', 'error');
+					}
+				})
+				.finally(function () {
+					if (submit) {
+						submit.disabled = false;
+					}
+				});
+		});
 	}
 
 	function escapeHtml(value) {
@@ -327,7 +347,9 @@ import '../scss/app.scss';
 		initThemeToggle();
 		initNavToggle();
 		initSearchToggle();
-		initHeroCarousel();
+		initMobileQuickNavMore();
+		initMostReadFilter();
+		initNewsletterForm();
 		initLoadMore();
 	}
 

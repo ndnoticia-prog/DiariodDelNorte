@@ -1,20 +1,18 @@
 <?php
 /**
- * Resuelve todo el contenido de la portada real pedida por el cliente: el grupo
- * "Lo último" (hero + tira de miniaturas + columna de tarjetas), los bloques de
- * categoría (La Guajira, Judiciales), Opinión, Editorial + Edición Impresa, Lo
- * más leído (vía Analytics\Pageviews\PageviewRepository, ya existente) y la
- * cuadrícula final "Más noticias". Varias WP_Query en vez de una sola: cada
- * sección tiene su propio origen (categoría distinta, o ranking por vistas en
- * vez de fecha) — no hay forma de resolverlas con una única consulta como hacía
- * la versión anterior de esta clase.
+ * Resuelve todo el contenido de la portada real (v0.1.0-alpha.18: hero de gran
+ * formato + dos noticias secundarias, La Guajira, Judiciales, Opinión, Más
+ * noticias, Lo más leído — con tres ventanas de tiempo — y Edición Impresa).
+ * Varias WP_Query en vez de una sola: cada sección tiene su propio origen
+ * (categoría distinta, o ranking por vistas en vez de fecha) — no hay forma de
+ * resolverlas con una única consulta.
  *
  * Deduplicación deliberadamente parcial: "Más noticias" excluye los posts ya
- * usados en "Lo último" (mismo fondo común de "más recientes", el duplicado ahí
- * se vería como un error de plantilla) pero los bloques de categoría NO se
- * excluyen entre sí ni contra el hero — un artículo puede ser a la vez la
- * noticia más comentada del momento (hero) y pertenecer a La Guajira; eso no es
- * un bug, es real en cualquier portada de diario.
+ * usados en el grupo del hero (mismo fondo común de "más recientes", el
+ * duplicado ahí se vería como un error de plantilla) pero los bloques de
+ * categoría NO se excluyen entre sí ni contra el hero — un artículo puede ser
+ * a la vez la noticia más comentada del momento (hero) y pertenecer a La
+ * Guajira; eso no es un bug, es real en cualquier portada de diario.
  *
  * @package DNorteTheme\Content
  */
@@ -29,31 +27,29 @@ use DNorteCore\Analytics\Pageviews\PageviewRepository;
 use DNorteCore\Application;
 use WP_Post;
 use WP_Query;
+use WP_Term;
 
 final class HomeContentProvider {
 
-	private const HERO_TOTAL        = 7; // El primero es el hero grande; el resto, miniaturas.
-	private const ASIDE_COUNT       = 6;
+	private const HERO_TOTAL        = 3; // El primero es el hero grande; los otros dos, secundarias.
 	private const CATEGORY_FEATURED = 3;
 	private const CATEGORY_LIST     = 6;
-	private const JUDICIALES_COUNT  = 9;
+	private const JUDICIALES_COUNT  = 4;
 	private const OPINION_COUNT     = 6;
-	private const MOST_READ_COUNT   = 4;
-	private const MOST_READ_DAYS    = 7;
-	private const NEWS_GRID_COUNT   = 16;
+	private const MOST_READ_COUNT   = 5;
+	private const NEWS_GRID_COUNT   = 12;
 
 	/**
 	 * @return array{
 	 *     hero: WP_Post|null,
-	 *     heroThumbs: list<WP_Post>,
-	 *     aside: list<WP_Post>,
+	 *     heroSecondary: list<WP_Post>,
 	 *     laGuajiraFeatured: list<WP_Post>,
 	 *     laGuajiraList: list<WP_Post>,
 	 *     judiciales: list<WP_Post>,
 	 *     opinion: list<WP_Post>,
-	 *     editorial: WP_Post|null,
 	 *     edicionImpresa: WP_Post|null,
-	 *     mostRead: list<WP_Post>,
+	 *     edicionImpresaPdfUrl: string,
+	 *     mostRead: array{'24h': list<WP_Post>, '7d': list<WP_Post>, '30d': list<WP_Post>},
 	 *     newsGrid: list<WP_Post>,
 	 *     newsGridExcluded: list<int>
 	 * }
@@ -63,34 +59,32 @@ final class HomeContentProvider {
 		$used = array();
 
 		$heroGroup = $this->recentPosts( self::HERO_TOTAL, $used );
-		$aside     = $this->recentPosts( self::ASIDE_COUNT, $used );
 
 		// Snapshot justo aquí (antes de que newsGrid vuelva a extender $used con sus
 		// propios ids): "Cargar más" (assets/js/app.js) necesita esta misma lista
-		// para no repetir en la siguiente página lo que ya se ve en "Lo último".
-		$heroAndAsideIds = $used;
+		// para no repetir en la siguiente página lo que ya se ve en el hero.
+		$heroIds = $used;
 
-		$laGuajira = $this->categoryPosts( 'la-guajira', self::CATEGORY_FEATURED + self::CATEGORY_LIST );
-		$editorial = $this->categoryPosts( 'editorial', 1 );
-		$impresa   = $this->categoryPosts( 'edicion-impresa', 1 );
+		$laGuajira   = $this->categoryPosts( 'la-guajira', self::CATEGORY_FEATURED + self::CATEGORY_LIST );
+		$impresa     = $this->categoryPosts( 'edicion-impresa', 1 );
+		$impresaPost = $impresa[0] ?? null;
 
-		// "Más noticias" solo excluye lo ya mostrado en "Lo último" (mismo fondo
-		// común de "más recientes" sin categoría particular) — ver docblock.
+		// "Más noticias" solo excluye lo ya mostrado en el hero (mismo fondo común
+		// de "más recientes" sin categoría particular) — ver docblock.
 		$newsGrid = $this->recentPosts( self::NEWS_GRID_COUNT, $used );
 
 		return array(
-			'hero'              => $heroGroup[0] ?? null,
-			'heroThumbs'        => array_slice( $heroGroup, 1 ),
-			'aside'             => $aside,
-			'laGuajiraFeatured' => array_slice( $laGuajira, 0, self::CATEGORY_FEATURED ),
-			'laGuajiraList'     => array_slice( $laGuajira, self::CATEGORY_FEATURED ),
-			'judiciales'        => $this->categoryPosts( 'judiciales', self::JUDICIALES_COUNT ),
-			'opinion'           => $this->categoryPosts( 'opinion', self::OPINION_COUNT ),
-			'editorial'         => $editorial[0] ?? null,
-			'edicionImpresa'    => $impresa[0] ?? null,
-			'mostRead'          => $this->mostRead( self::MOST_READ_COUNT ),
-			'newsGrid'          => $newsGrid,
-			'newsGridExcluded'  => $heroAndAsideIds,
+			'hero'                 => $heroGroup[0] ?? null,
+			'heroSecondary'        => array_slice( $heroGroup, 1 ),
+			'laGuajiraFeatured'    => array_slice( $laGuajira, 0, self::CATEGORY_FEATURED ),
+			'laGuajiraList'        => array_slice( $laGuajira, self::CATEGORY_FEATURED ),
+			'judiciales'           => $this->categoryPosts( 'judiciales', self::JUDICIALES_COUNT ),
+			'opinion'              => $this->categoryPosts( 'opinion', self::OPINION_COUNT ),
+			'edicionImpresa'       => $impresaPost,
+			'edicionImpresaPdfUrl' => $impresaPost !== null ? $this->firstAttachedPdfUrl( $impresaPost ) : '',
+			'mostRead'             => $this->mostReadByWindow(),
+			'newsGrid'             => $newsGrid,
+			'newsGridExcluded'     => $heroIds,
 		);
 	}
 
@@ -106,6 +100,13 @@ final class HomeContentProvider {
 				'post_status'            => 'publish',
 				'posts_per_page'         => $count,
 				'post__not_in'           => $usedIds,
+				// "Edición impresa" no es un titular más: es la referencia de portada
+				// del día (ver print-edition.php), que se publica con fecha muy
+				// reciente cada vez — sin esto, terminaría colándose como hero o en
+				// "Más noticias" simplemente por ser el post más nuevo, desplazando a
+				// una noticia real. Bug real encontrado en la verificación en el
+				// navegador con datos de ejemplo.
+				'category__not_in'       => $this->edicionImpresaCategoryId(),
 				'ignore_sticky_posts'    => true,
 				'no_found_rows'          => true,
 				'update_post_meta_cache' => false,
@@ -121,6 +122,15 @@ final class HomeContentProvider {
 		}
 
 		return $posts;
+	}
+
+	/**
+	 * @return list<int>
+	 */
+	private function edicionImpresaCategoryId(): array {
+		$term = get_term_by( 'slug', 'edicion-impresa', 'category' );
+
+		return $term instanceof WP_Term ? array( $term->term_id ) : array();
 	}
 
 	/**
@@ -147,25 +157,60 @@ final class HomeContentProvider {
 	}
 
 	/**
-	 * Ranking real por vistas de los últimos `MOST_READ_DAYS` días
-	 * (Analytics\Pageviews\PageviewRepository, ya alimentado por el propio sitio —
-	 * ver Analytics\PageviewBeaconRenderer). Si Analítica no está activa o
-	 * todavía no acumuló suficientes vistas (sitio recién publicado), completa el
-	 * resto con los artículos más recientes en su lugar — nunca deja la sección
-	 * vacía ni a medias por falta de datos históricos.
+	 * "Descargar PDF" de Edición Impresa (template-parts/blocks/print-edition.php)
+	 * reutiliza un adjunto real de la Biblioteca de medios subido al propio post
+	 * (el primer PDF encontrado) — sin ningún campo/sistema nuevo de carga.
+	 * Cadena vacía si no hay ninguno adjunto, el botón simplemente no se imprime.
+	 */
+	private function firstAttachedPdfUrl( WP_Post $post ): string {
+		$attachments = get_attached_media( 'application/pdf', $post );
+
+		if ( $attachments === array() ) {
+			return '';
+		}
+
+		$first = reset( $attachments );
+		$url   = wp_get_attachment_url( $first->ID );
+
+		return is_string( $url ) ? $url : '';
+	}
+
+	/**
+	 * Ranking real por vistas (Analytics\Pageviews\PageviewRepository, ya
+	 * alimentado por el propio sitio) en tres ventanas — 24 horas/7 días/30
+	 * días — para los filtros de "Lo más leído". Se calculan las tres de una
+	 * vez en vez de bajo demanda por JS: evita sumar un endpoint REST nuevo
+	 * solo para esto, las tres listas ya vienen en el HTML y el filtro en
+	 * pantalla solo muestra/oculta (ver assets/js/app.js).
+	 *
+	 * @return array{'24h': list<WP_Post>, '7d': list<WP_Post>, '30d': list<WP_Post>}
+	 */
+	private function mostReadByWindow(): array {
+		return array(
+			'24h' => $this->mostReadSince( 1 ),
+			'7d'  => $this->mostReadSince( 7 ),
+			'30d' => $this->mostReadSince( 30 ),
+		);
+	}
+
+	/**
+	 * Si Analítica no está activa o todavía no acumuló suficientes vistas
+	 * (sitio recién publicado), completa el resto con los artículos más
+	 * recientes en su lugar — nunca deja la sección vacía ni a medias por
+	 * falta de datos históricos.
 	 *
 	 * @return list<WP_Post>
 	 */
-	private function mostRead( int $count ): array {
+	private function mostReadSince( int $days ): array {
 		$posts = array();
 
 		try {
 			if ( class_exists( Application::class ) ) {
 				/** @var PageviewRepository $repository */
 				$repository = Application::instance()->container()->get( PageviewRepository::class );
-				$since      = new DateTimeImmutable( sprintf( '-%d days', self::MOST_READ_DAYS ), new DateTimeZone( 'UTC' ) );
+				$since      = new DateTimeImmutable( sprintf( '-%d days', $days ), new DateTimeZone( 'UTC' ) );
 
-				foreach ( $repository->topArticlesSince( $since, $count ) as $row ) {
+				foreach ( $repository->topArticlesSince( $since, self::MOST_READ_COUNT ) as $row ) {
 					$post = get_post( $row['post_id'] );
 
 					if ( $post instanceof WP_Post && $post->post_status === 'publish' ) {
@@ -181,10 +226,10 @@ final class HomeContentProvider {
 			$posts = array();
 		}
 
-		if ( count( $posts ) < $count ) {
+		if ( count( $posts ) < self::MOST_READ_COUNT ) {
 			/** @var list<int> $alreadyUsed */
 			$alreadyUsed = array_map( static fn ( WP_Post $post ): int => $post->ID, $posts );
-			$fallback    = $this->recentPosts( $count - count( $posts ), $alreadyUsed );
+			$fallback    = $this->recentPosts( self::MOST_READ_COUNT - count( $posts ), $alreadyUsed );
 			$posts       = array( ...$posts, ...$fallback );
 		}
 
