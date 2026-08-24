@@ -13,7 +13,8 @@ declare(strict_types=1);
 
 namespace DNorteCore\Tests\Integration\Ads;
 
-use DNorteCore\Ads\AdRepository;
+use DNorteCore\Ads\Campaign;
+use DNorteCore\Ads\CampaignRepository;
 use DNorteCore\Database\DatabaseManager;
 use WP_UnitTestCase;
 
@@ -21,11 +22,11 @@ final class ArticleAdInjectionTest extends WP_UnitTestCase {
 
 	public function test_the_content_filter_injects_the_three_article_slots_in_order(): void {
 		global $wpdb;
-		$repository = new AdRepository( new DatabaseManager( $wpdb ) );
+		$repository = new CampaignRepository( new DatabaseManager( $wpdb ) );
 
-		$repository->upsert( 'top_noticia', 'TOP-MARKER', true, null, null );
-		$repository->upsert( 'intermedio', 'MID-MARKER', true, null, null );
-		$repository->upsert( 'final', 'FINAL-MARKER', true, null, null );
+		$repository->save( $this->campaign( 'TOP-MARKER', array( 'top_noticia' ) ) );
+		$repository->save( $this->campaign( 'MID-MARKER', array( 'intermedio' ) ) );
+		$repository->save( $this->campaign( 'FINAL-MARKER', array( 'final' ) ) );
 
 		$postId = self::factory()->post->create(
 			array( 'post_content' => "Uno.\n\nDos.\n\nTres.\n\nCuatro." )
@@ -66,7 +67,7 @@ final class ArticleAdInjectionTest extends WP_UnitTestCase {
 
 	public function test_the_content_filter_does_not_apply_outside_the_main_loop(): void {
 		global $wpdb;
-		( new AdRepository( new DatabaseManager( $wpdb ) ) )->upsert( 'top_noticia', 'TOP-MARKER', true, null, null );
+		( new CampaignRepository( new DatabaseManager( $wpdb ) ) )->save( $this->campaign( 'TOP-MARKER', array( 'top_noticia' ) ) );
 
 		$postId = self::factory()->post->create( array( 'post_content' => 'Contenido simple.' ) );
 
@@ -77,9 +78,11 @@ final class ArticleAdInjectionTest extends WP_UnitTestCase {
 		self::assertStringNotContainsString( 'TOP-MARKER', $rendered );
 	}
 
-	public function test_a_disabled_ad_is_not_injected(): void {
+	public function test_a_disabled_campaign_is_not_injected(): void {
 		global $wpdb;
-		( new AdRepository( new DatabaseManager( $wpdb ) ) )->upsert( 'top_noticia', 'TOP-MARKER', false, null, null );
+		( new CampaignRepository( new DatabaseManager( $wpdb ) ) )->save(
+			$this->campaign( 'TOP-MARKER', array( 'top_noticia' ), enabled: false )
+		);
 
 		$postId = self::factory()->post->create( array( 'post_content' => 'Contenido simple.' ) );
 
@@ -93,5 +96,34 @@ final class ArticleAdInjectionTest extends WP_UnitTestCase {
 		}
 
 		self::assertStringNotContainsString( 'TOP-MARKER', $rendered );
+	}
+
+	public function test_a_campaign_restricted_to_another_category_is_not_injected(): void {
+		global $wpdb;
+		( new CampaignRepository( new DatabaseManager( $wpdb ) ) )->save(
+			$this->campaign( 'TOP-MARKER', array( 'top_noticia' ), categories: array( 'deportes' ) )
+		);
+
+		$postId = self::factory()->post->create( array( 'post_content' => 'Contenido simple.' ) );
+		wp_set_post_categories( $postId, array( self::factory()->category->create( array( 'slug' => 'economia' ) ) ) );
+
+		$this->go_to( get_permalink( $postId ) );
+
+		$rendered = '';
+
+		while ( have_posts() ) {
+			the_post();
+			$rendered = apply_filters( 'the_content', get_the_content() );
+		}
+
+		self::assertStringNotContainsString( 'TOP-MARKER', $rendered );
+	}
+
+	/**
+	 * @param list<string> $zones
+	 * @param list<string> $categories
+	 */
+	private function campaign( string $marker, array $zones, bool $enabled = true, array $categories = array() ): Campaign {
+		return new Campaign( 0, $marker, 'Anunciante', Campaign::TYPE_HTML, $enabled, 0, $zones, $categories, null, null, $marker, '', '' );
 	}
 }

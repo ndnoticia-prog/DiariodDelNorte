@@ -44,6 +44,8 @@ final class MigrationRegistryTest extends WP_UnitTestCase {
 				'add_search_fulltext_index_to_posts',
 				'create_pageviews_table',
 				'create_ads_table',
+				'drop_legacy_ads_table',
+				'create_ad_campaigns_table',
 			),
 			$firstRun
 		);

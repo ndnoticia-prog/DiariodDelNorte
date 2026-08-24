@@ -422,12 +422,41 @@ seguía siendo el placeholder mínimo del scaffold inicial.
       ambos modos de color. "Publicidad" como su propia entrada de nivel
       superior en el menú (no anidada). `debug.log` vacío en todo el recorrido.
 
+## v0.1.0-alpha.13 — Publicidad propia: de "un anuncio por espacio" a campañas
+
+Rediseño pedido tras compartir el formulario real de campañas del cliente —
+mismos cinco espacios de alpha.12, modelo de datos nuevo.
+
+- [x] `Ads\Campaign`/`Ads\CampaignRepository` (tabla `dnorte_ad_campaigns`,
+      reemplaza `dnorte_ads`): una campaña se dirige a varios espacios a la
+      vez (no uno solo), con prioridad (para empates entre campañas activas
+      en el mismo espacio) y segmentación opcional por categoría.
+- [x] Tipo de campaña: HTML/banner propio (como en alpha.12) o **Google
+      AdSense nativo** (Client ID + Slot). `AdsServiceProvider::enqueueAdSenseLoader()`
+      encola `adsbygoogle.js` una única vez por página vía
+      `wp_enqueue_script()`, solo si hace falta.
+- [x] Panel "Publicidad" rediseñado: tabla de campañas existentes + un único
+      formulario (crear/editar vía `?edit={id}`) con las zonas agrupadas en
+      checkboxes — reemplaza los cinco formularios repetidos de alpha.12.
+- [x] `Ads\Migrations\CreateAdCampaignsTable`/`DropLegacyAdsTable` — migraciones
+      nuevas, la tabla `dnorte_ads` de alpha.12 nunca se reescribe ni se borra
+      de `MigrationRegistry` (queda documentada como obsoleta).
+- [x] 5 pruebas unitarias nuevas (118 en total) y 6 de integración nuevas (66
+      en total). `composer run check` y `composer test:integration` en verde.
+- [x] Verificado en el WordPress real de desarrollo: campaña real creada desde
+      el formulario dirigida a Cabecera + Inicio a la vez, confirmada
+      visualmente en ambos espacios; edición de una campaña existente con
+      todos los campos precargados (incluido AdSense); script
+      `adsbygoogle.js` confirmado en el HTML servido; los tres espacios de
+      artículo siguen funcionando igual que en alpha.12; `debug.log` vacío en
+      todo el recorrido.
+
 ## Próximas versiones (por decidir)
 
 Alcance técnico restante, confirmado explícitamente por el cliente: IA — con la
 misma pregunta previa de si un plugin ya probado o una función nativa de
 WordPress lo resuelve sin construir nada nuevo (ver `docs/handoff-nd-platform.md`
 §8). El workflow editorial, el panel de turnos, la búsqueda interna, la
-analítica propia y la publicidad propia ya se cerraron (alpha.9–alpha.12). En lo
+analítica propia y la publicidad propia ya se cerraron (alpha.9–alpha.13). En lo
 estético: guía de marca real de Diario del Norte (sustituir el color de acento
 placeholder), y posible logo/isotipo en vez de branding solo textual.

@@ -15,7 +15,9 @@ declare(strict_types=1);
 
 namespace DNorteCore\Installer;
 
+use DNorteCore\Ads\Migrations\CreateAdCampaignsTable;
 use DNorteCore\Ads\Migrations\CreateAdsTable;
+use DNorteCore\Ads\Migrations\DropLegacyAdsTable;
 use DNorteCore\Analytics\Pageviews\CreatePageviewsTable;
 use DNorteCore\Migrator\Contracts\Migration;
 use DNorteCore\Search\Fulltext\CreateSearchFulltextIndex;
@@ -25,6 +27,12 @@ use DNorteCore\Workflow\Shifts\CreateShiftsTable;
 final class MigrationRegistry {
 
 	/**
+	 * CreateAdsTable/DropLegacyAdsTable se quedan en la lista para siempre aunque
+	 * la segunda deshaga a la primera casi de inmediato: una migración ya
+	 * publicada nunca se retira de aquí ni se reescribe (ver el docblock de
+	 * DropLegacyAdsTable) — un sitio que instale desde cero simplemente las corre
+	 * ambas en orden.
+	 *
 	 * @return list<Migration>
 	 */
 	public static function all(): array {
@@ -34,6 +42,8 @@ final class MigrationRegistry {
 			new CreateSearchFulltextIndex(),
 			new CreatePageviewsTable(),
 			new CreateAdsTable(),
+			new DropLegacyAdsTable(),
+			new CreateAdCampaignsTable(),
 		);
 	}
 }

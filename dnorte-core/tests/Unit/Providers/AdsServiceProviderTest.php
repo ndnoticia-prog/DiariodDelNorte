@@ -1,10 +1,10 @@
 <?php
 /**
- * renderCabecera()/renderInicio()/injectArticleAds() en sí (la resolución de
- * AdRepository vía el contenedor y su comportamiento real) no se cubren aquí a
- * propósito — ver el docblock de AdsServiceProvider: dependen en cadena de wpdb,
- * inexistente en este proceso de pruebas. Cubierto de punta a punta por
- * `tests/Integration/Ads/ArticleAdInjectionTest.php`.
+ * renderCabecera()/renderInicio()/enqueueAdSenseLoader()/injectArticleAds() en sí
+ * (la resolución de CampaignRepository vía el contenedor y su comportamiento
+ * real) no se cubren aquí a propósito — ver el docblock de AdsServiceProvider:
+ * dependen en cadena de wpdb, inexistente en este proceso de pruebas. Cubierto de
+ * punta a punta por `tests/Integration/Ads/*`.
  *
  * @package DNorteCore\Tests
  */
@@ -30,6 +30,9 @@ final class AdsServiceProviderTest extends TestCase {
 		Functions\expect( 'add_action' )
 			->once()
 			->with( 'dnorte_theme/after_header', Mockery::type( 'callable' ), 10, 1 );
+		Functions\expect( 'add_action' )
+			->once()
+			->with( 'wp_enqueue_scripts', Mockery::type( 'callable' ), 10, 1 );
 		Functions\expect( 'add_filter' )
 			->once()
 			->with( 'the_content', Mockery::type( 'callable' ), 20, 1 );

@@ -420,50 +420,65 @@ deliberada, no una limitación técnica temporal:
   WordPress core no tiene ningún concepto nativo de "cuántas veces se vio este
   post".
 
-## Publicidad propia: los cinco espacios y cómo llegan al HTML
+## Publicidad propia: campañas, no un anuncio fijo por espacio
 
 Los cinco espacios pedidos explícitamente para Diario del Norte
-(`config/ads.php`: `cabecera`, `inicio`, `top_noticia`, `intermedio`, `final`) se
-implementan con dos mecanismos distintos según dónde caen:
+(`config/ads.php`: `cabecera`, `inicio`, `top_noticia`, `intermedio`, `final`)
+son los mismos desde `v0.1.0-alpha.12`, pero el modelo de datos cambió por
+completo en `v0.1.0-alpha.13` a partir del formulario real de campañas del
+cliente: una **campaña** (`Ads\Campaign`) ya no vive atada a un único espacio —
+puede dirigirse a varios a la vez, con prioridad y segmentación opcional por
+categoría, y soporta Google AdSense de forma nativa además del HTML/banner
+propio del v1 original.
 
-- **Cabecera/Inicio (sitewide, fuera del flujo de contenido)**: dos hooks propios
-  y mínimos que `dnorte-theme` añade en `header.php` —
-  `dnorte_theme/before_topbar` (justo después del skip-link, antes de la barra
-  superior — "encima de la topbar") y `dnorte_theme/after_header` (justo después
-  de `</header>`, antes de `<main>` — "debajo del menú"). Son la única lógica que
-  `dnorte-theme` tuvo que sumar para todo el módulo: dos `do_action()` de una
-  línea, sin ningún `if`/lógica de negocio — el tema sigue sin saber qué es un
-  "anuncio", solo ofrece el punto de enganche. Un `do_action()` sin ningún
-  listener registrado (`dnorte-core` inactivo) es un no-op seguro.
-- **Top noticia/Intermedio/Final (dentro del artículo)**: los tres viven
-  enteramente en `dnorte-core`, sin tocar ninguna plantilla del tema, enganchados
-  al filtro nativo `the_content` en prioridad 20 (después de `wpautop`, prioridad
-  10 — necesario para que `Ads\ContentParagraphInjector` opere sobre HTML que ya
-  tiene las etiquetas `<p>` reales, no sobre texto plano separado por líneas en
-  blanco). `top_noticia` se antepone al contenido, `final` se añade al final, e
-  `intermedio` se inserta después del N-ésimo `</p>` (`ads.mid_article_paragraph`,
-  3 por defecto) — si el artículo tiene menos párrafos que eso, simplemente no se
-  inserta en ningún otro lado; nunca aparece en una posición distinta a la
-  configurada. Guardado con `in_the_loop()`/`is_main_query()` para no aparecer en
-  un widget de "relacionados" que también llame a `the_content()`.
-- **`Ads\ContentParagraphInjector`** es una pieza pura (ninguna dependencia de
-  WordPress) — mismo criterio que `Search\BooleanModeTermBuilder`: probarla no
-  necesita un `WP_Post`/`the_content` real.
-- **`dnorte_ads`** (`Ads\Migrations\CreateAdsTable`): **un único anuncio activo
-  por espacio en v1** (`UNIQUE KEY slot_key`) — decisión de alcance deliberada,
-  no una limitación técnica: los cinco espacios pedidos no necesitaban rotación
-  entre varios anunciantes todavía. Ampliar a varias filas por `slot_key`
-  (quitando la `UNIQUE KEY` y añadiendo alguna estrategia de selección) es el
-  camino natural si eso cambia. `starts_at`/`ends_at` sí admiten `NULL` —a
-  diferencia de otras tablas de la plataforma, que usan `''` como "sin valor"—
-  porque `''` no es una fecha `DATETIME` válida.
-- **`Ads\AdSlotRenderer`** imprime el HTML del anuncio **sin escapar** — a
-  propósito: el contenido casi siempre es una etiqueta `<script>` de una red
-  publicitaria o un banner con `<img>`/`<a>`, marcado que debe salir tal cual.
-  Por eso `Ads\AdsAdminPage` exige `manage_options` (más estricto que
+- **Dónde caen los cinco espacios (sin cambios desde alpha.12)**: Cabecera/Inicio
+  son sitewide, fuera del flujo de contenido — dos hooks propios y mínimos que
+  `dnorte-theme` añade en `header.php` (`dnorte_theme/before_topbar`/
+  `after_header`), la única lógica que el tema tuvo que sumar para todo el
+  módulo. Top noticia/Intermedio/Final viven enteramente en `dnorte-core`, sin
+  tocar ninguna plantilla, vía el filtro `the_content` en prioridad 20 (después
+  de `wpautop`, para que `Ads\ContentParagraphInjector` opere sobre HTML con
+  `<p>` reales). `Ads\ContentParagraphInjector` sigue siendo una pieza pura.
+- **`dnorte_ad_campaigns`** (`Ads\Migrations\CreateAdCampaignsTable`) reemplaza
+  a `dnorte_ads` (`v0.1.0-alpha.12`, ahora eliminada por
+  `Ads\Migrations\DropLegacyAdsTable` — ver el docblock de esa migración sobre
+  por qué es una migración nueva, no una reescritura). `zones`/`categories` son
+  listas separadas por comas en una sola columna, no una tabla de unión aparte:
+  con cinco espacios fijos y un puñado de campañas reales, filtrar en PHP
+  (`Campaign::appliesToZone()`/`appliesToCategories()`) resuelve lo mismo que un
+  `JOIN` sin el coste de mantener una tabla más.
+- **`CampaignRepository::forZone()`** resuelve, para un espacio y un momento
+  dados, la campaña activa (`enabled` + dentro de `starts_at`/`ends_at`) que se
+  dirige a ese espacio y a las categorías del contenido actual, con más
+  `priority` — filtrando y ordenando en PHP sobre `all()`, no con una consulta
+  SQL a medida por cada combinación posible de filtros.
+- **Segmentación por categoría, incluida su interacción con Cabecera/Inicio**:
+  una campaña sin categorías configuradas se dirige a todas, incluidos los
+  espacios sitewide (que no tienen ningún artículo de contexto,
+  `AdsServiceProvider` les pasa una lista vacía). Una campaña CON categorías
+  configuradas nunca aparece en Cabecera/Inicio — la intersección con una lista
+  vacía siempre es vacía, y "solo en Deportes" no tiene sentido fuera de un
+  artículo de Deportes.
+- **Tipo `adsense`**: `Ads\AdSlotRenderer` imprime solo el `<ins class="adsbygoogle">`
+  de cada unidad — el `<script>` que carga `adsbygoogle.js` se encola una única
+  vez por página con `wp_enqueue_script()` (`AdsServiceProvider::enqueueAdSenseLoader()`,
+  enganchado a `wp_enqueue_scripts`, no a `wp_head` directamente — hookear tan
+  tarde como `wp_head` habría llegado después de que `wp_print_head_scripts()`
+  (prioridad 9 de ese mismo hook) ya imprimiera la cola). Usa el Client ID de la
+  primera campaña AdSense activa que encuentra — simplificación correcta para
+  una sola cuenta de AdSense (el caso real), documentada como tal en el
+  docblock del método.
+- **`Ads\AdSlotRenderer`** imprime el marcado (HTML propio o la unidad AdSense)
+  **sin escapar** — a propósito: es contenido de terceros por diseño. Por eso
+  `Ads\AdsAdminPage` exige `manage_options` (más estricto que
   `edit_others_posts` en Turnos/Analítica) — la capacidad de inyectar HTML/JS en
   todo el sitio queda reservada a quien administra el sitio, mismo nivel de
   confianza que WordPress ya da a `unfiltered_html`.
+- **Panel "Publicidad"**: una tabla de campañas existentes + un único
+  formulario para crear una nueva o editar una vía `?edit={id}` — no un
+  formulario repetido por espacio (el diseño de alpha.12). `CampaignRepository::save()`
+  crea o reemplaza según si el `Campaign` que recibe trae `id > 0`, evitando
+  duplicar `create()`/`update()` para el único llamador real.
 - **Etiqueta "Publicidad"** (`app.scss`, `.dnorte-ad::before`): transparencia
   hacia el visitante, criterio estándar de la industria — no es solo estética.
 

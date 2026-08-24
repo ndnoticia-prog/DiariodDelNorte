@@ -20,7 +20,7 @@ parameters:
                 - src/Workflow/Notes/EditorialNoteRepository.php
                 - src/Workflow/Shifts/ShiftRepository.php
                 - src/Analytics/Pageviews/PageviewRepository.php
-                - src/Ads/AdRepository.php
+                - src/Ads/CampaignRepository.php
         -
             # Mismo mensaje de phpstan-strict-rules, motivo distinto: WP_Query::get('s'),
             # WP_REST_Request::get_param('q'/'post_id'/'referrer') devuelven "mixed"

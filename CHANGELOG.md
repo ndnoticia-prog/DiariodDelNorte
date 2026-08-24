@@ -2,6 +2,56 @@
 
 Formato basado en [Keep a Changelog](https://keepachangelog.com/es-ES/1.0.0/).
 
+## [Unreleased] — v0.1.0-alpha.13
+
+### Changed
+
+- `dnorte-core`: publicidad propia rediseñada de "un anuncio por espacio" a
+  **campañas** — pedido explícitamente tras compartir el formulario real de
+  campañas del cliente. Una campaña (`Ads\Campaign`) ya puede dirigirse a
+  varios de los cinco espacios a la vez (checkboxes agrupados, no un control
+  por espacio), con **prioridad** para resolver empates cuando varias
+  campañas activas se dirigen al mismo espacio, **segmentación opcional por
+  categoría** (vacío = todas), y **tipo**: HTML/banner propio (como antes) o
+  **Google AdSense nativo** (Client ID + Slot, sin pegar HTML a mano).
+- `Ads\AdSlotRenderer::render()` ya no decide qué campaña corresponde ni si
+  está activa — eso ahora lo resuelve `CampaignRepository::forZone()` antes de
+  llegar ahí; el renderer solo sabe dibujar la campaña que le pasan (HTML
+  propio o la unidad `<ins class="adsbygoogle">` si el tipo es AdSense).
+- `Ads\AdsAdminPage` rediseñado: una tabla de campañas existentes + un único
+  formulario para crear una nueva o editar una vía `?edit={id}` — reemplaza
+  los cinco formularios repetidos (uno por espacio) de `v0.1.0-alpha.12`.
+
+### Added
+
+- `dnorte-core`: `Ads\Migrations\CreateAdCampaignsTable` (tabla
+  `dnorte_ad_campaigns`) y `Ads\Migrations\DropLegacyAdsTable` (elimina la
+  `dnorte_ads` de alpha.12) — migraciones nuevas, no una reescritura de
+  `CreateAdsTable` (que se queda en `MigrationRegistry` para siempre, ver su
+  docblock).
+- `Providers\AdsServiceProvider::enqueueAdSenseLoader()` — encola
+  `adsbygoogle.js` una única vez por página vía `wp_enqueue_script()` (enganchado
+  a `wp_enqueue_scripts`, no a `wp_head`, para llegar a tiempo de
+  `wp_print_head_scripts()`) solo si hay al menos una campaña AdSense activa.
+- 5 pruebas unitarias nuevas (`Campaign`, `AdSlotRenderer` con tipo AdSense) —
+  118 en total en `dnorte-core`. 6 pruebas de integración nuevas
+  (`CampaignRepository`, segmentación por categoría, una campaña dirigida a
+  Cabecera+Inicio a la vez, el encolado real de AdSense) — 66 en total.
+
+### Verified
+
+- `composer run check` (0 errores PHPCS, 0 errores PHPStan nivel máximo, 118
+  pruebas unitarias) y `composer test:integration` (66 pruebas) en verde.
+- WordPress real de desarrollo: campaña creada desde el formulario real
+  dirigida a Cabecera + Inicio a la vez, verificada visualmente en ambos
+  espacios con el mismo anuncio; edición de una campaña existente (`?edit=`)
+  confirmada con todos los campos precargados correctamente, incluidos
+  Client ID/Slot de AdSense; el script `adsbygoogle.js` confirmado en el HTML
+  servido con el `client=` correcto tras crear una campaña AdSense; los tres
+  espacios de artículo siguen funcionando exactamente igual que en alpha.12
+  (Top noticia antes del primer párrafo, Final al terminar); `debug.log`
+  vacío en todo el recorrido.
+
 ## [Unreleased] — v0.1.0-alpha.12
 
 ### Added
