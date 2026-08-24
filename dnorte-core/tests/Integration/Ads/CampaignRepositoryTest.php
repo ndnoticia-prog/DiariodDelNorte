@@ -127,6 +127,68 @@ final class CampaignRepositoryTest extends WP_UnitTestCase {
 		self::assertSame( array( 501, 502 ), $saved->evidenceIds );
 	}
 
+	public function test_extended_type_fields_round_trip_through_save_and_find(): void {
+		global $wpdb;
+		$repository = new CampaignRepository( new DatabaseManager( $wpdb ) );
+
+		$id = $repository->save(
+			new Campaign(
+				0,
+				'Campaña GAM',
+				'Anunciante',
+				Campaign::TYPE_GAM,
+				true,
+				0,
+				array( 'cabecera' ),
+				array(),
+				null,
+				null,
+				'',
+				'',
+				'',
+				'',
+				'',
+				0,
+				0,
+				array(),
+				'Texto descriptivo',
+				'https://example.com/banner.mp4',
+				'/1234567/diariodelnorte/cabecera',
+				'728x90,970x250'
+			)
+		);
+
+		$saved = $repository->find( $id );
+
+		self::assertNotNull( $saved );
+		self::assertSame( 'Texto descriptivo', $saved->description );
+		self::assertSame( 'https://example.com/banner.mp4', $saved->videoUrl );
+		self::assertSame( '/1234567/diariodelnorte/cabecera', $saved->gamAdUnitPath );
+		self::assertSame( '728x90,970x250', $saved->gamSizes );
+	}
+
+	public function test_saving_an_existing_campaign_never_resets_its_stats_or_evidence(): void {
+		global $wpdb;
+		$repository = new CampaignRepository( new DatabaseManager( $wpdb ) );
+
+		$id = $repository->save( $this->draft() );
+		$repository->recordImpression( $id );
+		$repository->recordClick( $id );
+		$repository->addEvidence( $id, 777 );
+
+		// Editar la campaña desde el panel (AdsAdminPage::handleSave()) no debe
+		// borrar las estadísticas ni la evidencia ya acumuladas.
+		$repository->save( $this->draft( id: $id, name: 'Campaña editada' ) );
+
+		$saved = $repository->find( $id );
+
+		self::assertNotNull( $saved );
+		self::assertSame( 'Campaña editada', $saved->name );
+		self::assertSame( 1, $saved->impressions );
+		self::assertSame( 1, $saved->clicks );
+		self::assertSame( array( 777 ), $saved->evidenceIds );
+	}
+
 	/**
 	 * @param list<string> $zones
 	 * @param list<string> $categories

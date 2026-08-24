@@ -2,6 +2,43 @@
 
 Formato basado en [Keep a Changelog](https://keepachangelog.com/es-ES/1.0.0/).
 
+## [Unreleased] — v0.1.0-alpha.15
+
+### Added
+
+- `dnorte-core`: tres tipos de campaña nuevos, a partir de la lista real de
+  tipos del cliente — **Google Ad Manager** (`gam`: ruta de la unidad + tamaños,
+  genera el `googletag.defineSlot()` correspondiente; `gpt.js` se encola una
+  única vez por página, igual que AdSense), **Vídeo** (`video`: banner de vídeo
+  propio autoreproducido/silenciado/en bucle, no un pre-roll con VAST) y
+  **Contenido patrocinado** (`sponsored`: imagen + texto descriptivo corto).
+  Seis tipos en total: adsense/gam/html/image/video/sponsored.
+
+### Changed
+
+- `dnorte-core`: el formulario de campaña ya no muestra todos los campos de
+  todos los tipos a la vez — pedido explícitamente. Cada fila puede declarar a
+  qué tipo(s) pertenece (`data-ad-fields-for`), y un único `<script>`
+  (`AdsAdminPage::renderTypeToggleScript()`) muestra solo las que corresponden
+  al tipo seleccionado, tanto al cargar el formulario como al cambiar el
+  `<select>` — primer JS en un panel de administración de la plataforma,
+  deliberadamente vainilla, sin dependencias nuevas.
+
+### Verified
+
+- `composer run check` (0 errores PHPCS, 0 errores PHPStan nivel máximo, 127
+  pruebas unitarias) y `composer test:integration` (75 pruebas) en verde.
+- WordPress real de desarrollo: los seis tipos disponibles en el `<select>` en
+  el orden pedido; seleccionar cada uno revela solo sus campos correspondientes
+  (probado con HTML, Google Ad Manager y Contenido patrocinado); campaña GAM
+  real creada y confirmada en el HTML servido
+  (`googletag.defineSlot("/1234567/diariodelnorte/inicio",[[728,90]],...)`,
+  `gpt.js` encolado); campaña de contenido patrocinado real con imagen y texto
+  descriptivo verificada visualmente en el espacio "Top noticia"; `debug.log`
+  vacío en todo el recorrido (los errores de CORS de Google en la consola del
+  navegador contra una ruta de prueba sin cuenta real de GAM son esperados, no
+  un fallo de la plataforma).
+
 ## [Unreleased] — v0.1.0-alpha.14
 
 ### Added

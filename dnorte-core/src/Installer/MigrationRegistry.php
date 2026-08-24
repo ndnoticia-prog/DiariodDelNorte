@@ -16,6 +16,7 @@ declare(strict_types=1);
 namespace DNorteCore\Installer;
 
 use DNorteCore\Ads\Migrations\AddCampaignStatsAndMediaColumns;
+use DNorteCore\Ads\Migrations\AddExtendedCampaignTypeColumns;
 use DNorteCore\Ads\Migrations\CreateAdCampaignHistoryTable;
 use DNorteCore\Ads\Migrations\CreateAdCampaignsTable;
 use DNorteCore\Ads\Migrations\CreateAdsTable;
@@ -48,6 +49,7 @@ final class MigrationRegistry {
 			new CreateAdCampaignsTable(),
 			new AddCampaignStatsAndMediaColumns(),
 			new CreateAdCampaignHistoryTable(),
+			new AddExtendedCampaignTypeColumns(),
 		);
 	}
 }

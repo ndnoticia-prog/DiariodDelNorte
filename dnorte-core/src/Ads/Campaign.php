@@ -12,9 +12,12 @@ use DateTimeZone;
 
 final class Campaign {
 
-	public const TYPE_HTML    = 'html';
-	public const TYPE_ADSENSE = 'adsense';
-	public const TYPE_IMAGE   = 'image';
+	public const TYPE_HTML      = 'html';
+	public const TYPE_ADSENSE   = 'adsense';
+	public const TYPE_IMAGE     = 'image';
+	public const TYPE_GAM       = 'gam';
+	public const TYPE_VIDEO     = 'video';
+	public const TYPE_SPONSORED = 'sponsored';
 
 	/**
 	 * @param list<string> $zones Claves de espacio (config/ads.php) donde puede aparecer.
@@ -23,6 +26,14 @@ final class Campaign {
 	 * @param list<int> $evidenceIds Ids de adjuntos de la Biblioteca de medios que
 	 *                                prueban que la campaña corrió (capturas,
 	 *                                contrato con el anunciante, etc.).
+	 * @param string $description Texto corto para el tipo "sponsored" (ej. "Descubre
+	 *                              la nueva colección de..."); sin uso en el resto de tipos.
+	 * @param string $videoUrl URL del vídeo (tipo "video") — banner autoreproducido,
+	 *                          silenciado y en bucle, no un anuncio pre-roll con VAST.
+	 * @param string $gamAdUnitPath Ruta de la unidad de anuncio de Google Ad Manager
+	 *                                (ej. "/1234567/diariodelnorte/cabecera"), tipo "gam".
+	 * @param string $gamSizes Tamaños de la unidad GAM separados por comas
+	 *                           (ej. "728x90,970x250"), tipo "gam".
 	 */
 	public function __construct(
 		public readonly int $id,
@@ -42,7 +53,11 @@ final class Campaign {
 		public readonly string $linkUrl = '',
 		public readonly int $impressions = 0,
 		public readonly int $clicks = 0,
-		public readonly array $evidenceIds = array()
+		public readonly array $evidenceIds = array(),
+		public readonly string $description = '',
+		public readonly string $videoUrl = '',
+		public readonly string $gamAdUnitPath = '',
+		public readonly string $gamSizes = ''
 	) {
 	}
 

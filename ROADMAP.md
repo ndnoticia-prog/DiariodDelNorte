@@ -484,12 +484,34 @@ una pestaña Historial) sobre el modelo de campañas de alpha.13.
       seguimiento confirmado para un visitante anónimo y ausente para el
       equipo editorial, `debug.log` vacío en todo el recorrido.
 
+## v0.1.0-alpha.15 — Publicidad propia: seis tipos de campaña, formulario simplificado
+
+Pedido a partir de la lista real de tipos del cliente (adsense/gam/html/image/
+video/sponsored).
+
+- [x] Tres tipos nuevos: **Google Ad Manager** (ruta de la unidad + tamaños,
+      genera `googletag.defineSlot()`, `gpt.js` encolado una única vez por
+      página igual que AdSense), **Vídeo** (banner propio autoreproducido) y
+      **Contenido patrocinado** (imagen + texto descriptivo).
+- [x] Formulario reducido al tipo elegido: cada campo se muestra solo si
+      corresponde al tipo seleccionado (`data-ad-fields-for` + un único
+      `<script>` vainilla, sin dependencias nuevas) — antes se mostraban todos
+      los campos de todos los tipos a la vez.
+- [x] 4 pruebas unitarias nuevas (127 en total) y 3 de integración nuevas (75
+      en total). `composer run check` y `composer test:integration` en verde.
+- [x] Verificado en el WordPress real de desarrollo: los seis tipos en el orden
+      pedido, revelado correcto de campos al cambiar el tipo (HTML/GAM/
+      Contenido patrocinado probados), campaña GAM real confirmada en el HTML
+      servido (`defineSlot` con la ruta/tamaños correctos, `gpt.js` encolado),
+      campaña de contenido patrocinado real verificada visualmente, `debug.log`
+      vacío en todo el recorrido.
+
 ## Próximas versiones (por decidir)
 
 Alcance técnico restante, confirmado explícitamente por el cliente: IA — con la
 misma pregunta previa de si un plugin ya probado o una función nativa de
 WordPress lo resuelve sin construir nada nuevo (ver `docs/handoff-nd-platform.md`
 §8). El workflow editorial, el panel de turnos, la búsqueda interna, la
-analítica propia y la publicidad propia ya se cerraron (alpha.9–alpha.14). En lo
+analítica propia y la publicidad propia ya se cerraron (alpha.9–alpha.15). En lo
 estético: guía de marca real de Diario del Norte (sustituir el color de acento
 placeholder), y posible logo/isotipo en vez de branding solo textual.

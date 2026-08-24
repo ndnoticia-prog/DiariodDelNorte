@@ -34,9 +34,12 @@ final class AdsAdminPage implements RegistersAdminPages {
 	private const NONCE_ACTION  = 'dnorte_ads_manage';
 	private const NONCE_FIELD   = 'dnorte_ads_nonce';
 	private const TYPES         = array(
-		Campaign::TYPE_HTML    => 'HTML/banner propio',
-		Campaign::TYPE_ADSENSE => 'Google AdSense',
-		Campaign::TYPE_IMAGE   => 'Imagen (banner propio)',
+		Campaign::TYPE_ADSENSE   => 'Google AdSense',
+		Campaign::TYPE_GAM       => 'Google Ad Manager',
+		Campaign::TYPE_HTML      => 'HTML/banner propio',
+		Campaign::TYPE_IMAGE     => 'Imagen (banner propio)',
+		Campaign::TYPE_VIDEO     => 'Vídeo (banner propio)',
+		Campaign::TYPE_SPONSORED => 'Contenido patrocinado',
 	);
 	private const ACTION_LABELS = array(
 		'creada'      => 'Creada',
@@ -262,6 +265,14 @@ final class AdsAdminPage implements RegistersAdminPages {
 		$imageUrl = isset( $_POST['image_url'] ) ? esc_url_raw( wp_unslash( $_POST['image_url'] ) ) : '';
 		// phpcs:ignore WordPress.Security.NonceVerification.Missing
 		$linkUrl = isset( $_POST['link_url'] ) ? esc_url_raw( wp_unslash( $_POST['link_url'] ) ) : '';
+		// phpcs:ignore WordPress.Security.NonceVerification.Missing
+		$videoUrl = isset( $_POST['video_url'] ) ? esc_url_raw( wp_unslash( $_POST['video_url'] ) ) : '';
+		// phpcs:ignore WordPress.Security.NonceVerification.Missing
+		$description = isset( $_POST['description'] ) ? sanitize_text_field( wp_unslash( $_POST['description'] ) ) : '';
+		// phpcs:ignore WordPress.Security.NonceVerification.Missing
+		$gamAdUnitPath = isset( $_POST['gam_ad_unit_path'] ) ? sanitize_text_field( wp_unslash( $_POST['gam_ad_unit_path'] ) ) : '';
+		// phpcs:ignore WordPress.Security.NonceVerification.Missing
+		$gamSizes = isset( $_POST['gam_sizes'] ) ? sanitize_text_field( wp_unslash( $_POST['gam_sizes'] ) ) : '';
 
 		if ( $name === '' ) {
 			return array(
@@ -294,7 +305,14 @@ final class AdsAdminPage implements RegistersAdminPages {
 			$adsenseClientId,
 			$adsenseSlotId,
 			$imageUrl,
-			$linkUrl
+			$linkUrl,
+			$existing?->impressions ?? 0,
+			$existing?->clicks ?? 0,
+			$existing?->evidenceIds ?? array(),
+			$description,
+			$videoUrl,
+			$gamAdUnitPath,
+			$gamSizes
 		);
 
 		$savedId = $this->campaigns->save( $campaign );
@@ -755,20 +773,29 @@ final class AdsAdminPage implements RegistersAdminPages {
 
 		echo '<table class="form-table"><tbody>';
 
+		$currentType = $editing?->type ?? Campaign::TYPE_HTML;
+
 		$this->renderTextRow( 'name', __( 'Nombre', 'dnorte-core' ), $editing?->name ?? '', true );
 		$this->renderTextRow( 'advertiser', __( 'Anunciante', 'dnorte-core' ), $editing?->advertiser ?? '' );
-		$this->renderTypeRow( $editing?->type ?? Campaign::TYPE_HTML );
+		$this->renderTypeRow( $currentType );
 		$this->renderEnabledRow( $editing === null || $editing->enabled );
 		$this->renderPriorityRow( $editing?->priority ?? 0 );
 		$this->renderZonesRow( $editing?->zones ?? array() );
 		$this->renderTextRow( 'categories', __( 'Categorías (opcional, separadas por coma; vacío = todas)', 'dnorte-core' ), implode( ', ', $editing?->categories ?? array() ) );
 		$this->renderDatetimeRow( 'starts_at', __( 'Empieza (opcional)', 'dnorte-core' ), $editing?->startsAt ?? null );
 		$this->renderDatetimeRow( 'ends_at', __( 'Termina (opcional)', 'dnorte-core' ), $editing?->endsAt ?? null );
+
+		// Campos específicos de cada tipo — ocultos salvo que coincidan con el tipo
+		// seleccionado (ver renderTypeToggleScript()).
 		$this->renderHtmlRow( $editing?->html ?? '' );
-		$this->renderTextRow( 'image_url', __( 'URL de la imagen (si el tipo es Imagen)', 'dnorte-core' ), $editing?->imageUrl ?? '' );
-		$this->renderTextRow( 'link_url', __( 'URL de destino (si el tipo es Imagen)', 'dnorte-core' ), $editing?->linkUrl ?? '' );
-		$this->renderTextRow( 'adsense_client_id', __( 'Client ID de AdSense (ca-pub-...)', 'dnorte-core' ), $editing?->adsenseClientId ?? '' );
-		$this->renderTextRow( 'adsense_slot_id', __( 'Slot de AdSense', 'dnorte-core' ), $editing?->adsenseSlotId ?? '' );
+		$this->renderTextRow( 'image_url', __( 'URL de la imagen', 'dnorte-core' ), $editing?->imageUrl ?? '', false, array( Campaign::TYPE_IMAGE, Campaign::TYPE_SPONSORED ) );
+		$this->renderTextRow( 'video_url', __( 'URL del vídeo', 'dnorte-core' ), $editing?->videoUrl ?? '', false, array( Campaign::TYPE_VIDEO ) );
+		$this->renderTextRow( 'description', __( 'Texto descriptivo', 'dnorte-core' ), $editing?->description ?? '', false, array( Campaign::TYPE_SPONSORED ) );
+		$this->renderTextRow( 'link_url', __( 'URL de destino', 'dnorte-core' ), $editing?->linkUrl ?? '', false, array( Campaign::TYPE_IMAGE, Campaign::TYPE_VIDEO, Campaign::TYPE_SPONSORED ) );
+		$this->renderTextRow( 'adsense_client_id', __( 'Client ID de AdSense (ca-pub-...)', 'dnorte-core' ), $editing?->adsenseClientId ?? '', false, array( Campaign::TYPE_ADSENSE ) );
+		$this->renderTextRow( 'adsense_slot_id', __( 'Slot de AdSense', 'dnorte-core' ), $editing?->adsenseSlotId ?? '', false, array( Campaign::TYPE_ADSENSE ) );
+		$this->renderTextRow( 'gam_ad_unit_path', __( 'Ruta de la unidad de Ad Manager (ej. /1234567/diariodelnorte/cabecera)', 'dnorte-core' ), $editing?->gamAdUnitPath ?? '', false, array( Campaign::TYPE_GAM ) );
+		$this->renderTextRow( 'gam_sizes', __( 'Tamaños de Ad Manager, separados por comas (ej. 728x90,970x250)', 'dnorte-core' ), $editing?->gamSizes ?? '', false, array( Campaign::TYPE_GAM ) );
 
 		echo '</tbody></table>';
 
@@ -784,14 +811,43 @@ final class AdsAdminPage implements RegistersAdminPages {
 		}
 
 		echo '</form>';
+
+		$this->renderTypeToggleScript();
 	}
 
-	private function renderTextRow( string $name, string $label, string $value, bool $required = false ): void {
+	/**
+	 * Muestra solo las filas del formulario que corresponden al tipo de campaña
+	 * seleccionado (`data-ad-fields-for`, puesto por renderTextRow()/renderHtmlRow())
+	 * — pedido explícitamente: antes se mostraban todos los campos de todos los
+	 * tipos a la vez, con una nota de "se ignora si el tipo es...". Un único
+	 * `<script>` por render del formulario, sin dependencias — no hay jQuery ni
+	 * ningún otro JS en el resto de paneles de administración de la plataforma,
+	 * así que tampoco hacía falta sumarlo aquí.
+	 */
+	private function renderTypeToggleScript(): void {
+		echo '<script>(function(){var select=document.getElementById("dnorte-ad-type");if(!select){return;}function apply(){var type=select.value;document.querySelectorAll("[data-ad-fields-for]").forEach(function(row){var types=row.getAttribute("data-ad-fields-for").split(",");row.style.display=types.indexOf(type)!==-1?"":"none";});}select.addEventListener("change",apply);apply();})();</script>';
+	}
+
+	/**
+	 * @param list<string> $forTypes Tipos de campaña que usan este campo — la fila
+	 *                                 se oculta con JS (ver renderTypeToggleScript())
+	 *                                 salvo que el tipo seleccionado esté en esta
+	 *                                 lista. Vacío = siempre visible (campos
+	 *                                 comunes a todos los tipos, como Nombre).
+	 */
+	private function renderTextRow( string $name, string $label, string $value, bool $required = false, array $forTypes = array() ): void {
 		$id = 'dnorte-ad-' . $name;
 
-		echo '<tr><th><label for="' . esc_attr( $id ) . '">' . esc_html( $label ) . '</label></th><td>';
+		echo '<tr' . $this->dataForTypesAttr( $forTypes ) . '><th><label for="' . esc_attr( $id ) . '">' . esc_html( $label ) . '</label></th><td>'; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- dataForTypesAttr() ya pasa su único valor dinámico por esc_attr() internamente antes de devolverlo.
 		echo '<input type="text" id="' . esc_attr( $id ) . '" name="' . esc_attr( $name ) . '" value="' . esc_attr( $value ) . '" class="regular-text"' . ( $required ? ' required="required"' : '' ) . ' />';
 		echo '</td></tr>';
+	}
+
+	/**
+	 * @param list<string> $forTypes
+	 */
+	private function dataForTypesAttr( array $forTypes ): string {
+		return $forTypes === array() ? '' : ' data-ad-fields-for="' . esc_attr( implode( ',', $forTypes ) ) . '"';
 	}
 
 	private function renderTypeRow( string $selected ): void {
@@ -851,9 +907,9 @@ final class AdsAdminPage implements RegistersAdminPages {
 	}
 
 	private function renderHtmlRow( string $html ): void {
-		echo '<tr><th><label for="dnorte-ad-html">' . esc_html__( 'HTML del anuncio (si el tipo es HTML/banner propio)', 'dnorte-core' ) . '</label></th><td>';
+		echo '<tr data-ad-fields-for="html"><th><label for="dnorte-ad-html">' . esc_html__( 'HTML del anuncio', 'dnorte-core' ) . '</label></th><td>';
 		echo '<textarea id="dnorte-ad-html" name="html" rows="5" class="large-text code">' . esc_textarea( $html ) . '</textarea>';
-		echo '<p class="description">' . esc_html__( 'La etiqueta <script> de una red publicitaria, o un banner propio con <img>/<a>. Se ignora si el tipo es Imagen o Google AdSense.', 'dnorte-core' ) . '</p>';
+		echo '<p class="description">' . esc_html__( 'La etiqueta <script> de una red publicitaria, o un banner propio con <img>/<a>.', 'dnorte-core' ) . '</p>';
 		echo '</td></tr>';
 	}
 

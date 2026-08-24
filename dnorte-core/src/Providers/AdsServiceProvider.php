@@ -3,10 +3,10 @@
  * Conecta el módulo de publicidad propia: los dos espacios sitewide (cabecera/
  * inicio, hooks propios de dnorte-theme), los tres espacios de artículo (top
  * noticia/intermedio/final, todos vía el filtro `the_content` — ver
- * injectArticleAds()), el cargador de Google AdSense (una sola vez por página,
- * ver enqueueAdSenseLoader()), el script de seguimiento de impresiones/clics (ver
- * renderTrackingScript()), el endpoint REST que los recibe y el panel de
- * administración.
+ * injectArticleAds()), los cargadores de Google AdSense/Ad Manager (una sola vez
+ * por página cada uno, ver enqueueAdSenseLoader()/enqueueGamLoader()), el script
+ * de seguimiento de impresiones/clics (ver renderTrackingScript()), el endpoint
+ * REST que los recibe y el panel de administración.
  *
  * CampaignRepository se resuelve de forma diferida (dentro de cada callback, no
  * aquí en boot()), mismo motivo documentado en Search/AnalyticsServiceProvider:
@@ -41,6 +41,7 @@ final class AdsServiceProvider extends ServiceProvider {
 		$hooks->addAction( 'dnorte_theme/before_topbar', $this->renderCabecera( ... ), 10 );
 		$hooks->addAction( 'dnorte_theme/after_header', $this->renderInicio( ... ), 10 );
 		$hooks->addAction( 'wp_enqueue_scripts', $this->enqueueAdSenseLoader( ... ), 10 );
+		$hooks->addAction( 'wp_enqueue_scripts', $this->enqueueGamLoader( ... ), 10 );
 		$hooks->addAction( 'wp_footer', $this->renderTrackingScript( ... ), 20 );
 		$hooks->addFilter( 'the_content', $this->injectArticleAds( ... ), 20, 1 );
 		$hooks->addFilter( 'dnorte_core/admin_pages', $this->addAdminPages( ... ), 10, 1 );
@@ -84,6 +85,33 @@ final class AdsServiceProvider extends ServiceProvider {
 				add_query_arg( 'client', $campaign->adsenseClientId, 'https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js' ),
 				array(),
 				null, // phpcs:ignore WordPress.WP.EnqueuedResourceParameters.MissingVersion -- sin versión a propósito: es la URL exacta de un script de terceros (Google), añadirle "?ver=..." la cambiaría y WordPress no controla sus versiones.
+				array( 'strategy' => 'async' )
+			);
+
+			return;
+		}
+	}
+
+	/**
+	 * Encola `gpt.js` (la librería de Google Ad Manager) una única vez por página,
+	 * solo si hay al menos una campaña de tipo GAM activa ahora mismo — mismo
+	 * criterio y motivo que enqueueAdSenseLoader().
+	 */
+	public function enqueueGamLoader(): void {
+		/** @var CampaignRepository $repository */
+		$repository = $this->container->get( CampaignRepository::class );
+		$now        = new DateTimeImmutable( 'now', new DateTimeZone( 'UTC' ) );
+
+		foreach ( $repository->all() as $campaign ) {
+			if ( $campaign->type !== Campaign::TYPE_GAM || $campaign->gamAdUnitPath === '' || ! $campaign->isActiveAt( $now ) ) {
+				continue;
+			}
+
+			wp_enqueue_script(
+				'dnorte-gpt',
+				'https://securepubads.g.doubleclick.net/tag/js/gpt.js',
+				array(),
+				null, // phpcs:ignore WordPress.WP.EnqueuedResourceParameters.MissingVersion -- sin versión a propósito, ver el mismo caso en enqueueAdSenseLoader().
 				array( 'strategy' => 'async' )
 			);
 

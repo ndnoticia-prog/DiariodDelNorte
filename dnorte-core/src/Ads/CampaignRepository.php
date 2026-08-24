@@ -150,6 +150,10 @@ final class CampaignRepository {
 			'adsense_slot_id'   => $campaign->adsenseSlotId,
 			'image_url'         => $campaign->imageUrl,
 			'link_url'          => $campaign->linkUrl,
+			'video_url'         => $campaign->videoUrl,
+			'description'       => $campaign->description,
+			'gam_ad_unit_path'  => $campaign->gamAdUnitPath,
+			'gam_sizes'         => $campaign->gamSizes,
 			'updated_at'        => gmdate( 'Y-m-d H:i:s' ),
 		);
 	}
@@ -176,7 +180,11 @@ final class CampaignRepository {
 			(string) $row['link_url'],
 			(int) $row['impressions'],
 			(int) $row['clicks'],
-			array_map( 'intval', $this->splitList( (string) $row['evidence_ids'] ) )
+			array_map( 'intval', $this->splitList( (string) $row['evidence_ids'] ) ),
+			(string) $row['description'],
+			(string) $row['video_url'],
+			(string) $row['gam_ad_unit_path'],
+			(string) $row['gam_sizes']
 		);
 	}
 

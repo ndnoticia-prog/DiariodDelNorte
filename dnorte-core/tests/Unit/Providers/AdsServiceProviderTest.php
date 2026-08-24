@@ -32,7 +32,7 @@ final class AdsServiceProviderTest extends TestCase {
 			->once()
 			->with( 'dnorte_theme/after_header', Mockery::type( 'callable' ), 10, 1 );
 		Functions\expect( 'add_action' )
-			->once()
+			->twice()
 			->with( 'wp_enqueue_scripts', Mockery::type( 'callable' ), 10, 1 );
 		Functions\expect( 'add_action' )
 			->once()

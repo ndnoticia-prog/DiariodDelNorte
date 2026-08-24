@@ -533,6 +533,39 @@ una pestaña Historial):
   enlaces en `AdsAdminPage::cleanBaseUrl()`, que retira también los tres
   parámetros de acción, no solo los de vista (`tab`/`edit`/`evidence`/`report`).
 
+### Seis tipos de campaña, con el formulario reducido al tipo elegido (v0.1.0-alpha.15)
+
+Ampliación pedida a partir de la lista real de tipos del cliente
+(adsense/gam/html/image/video/sponsored, en ese orden en el `<select>`):
+
+- **Tipos nuevos**: `gam` (Google Ad Manager), `video` (banner de vídeo propio,
+  autoreproducido/silenciado/en bucle — no un anuncio de pre-roll con VAST/VMAP,
+  fuera de alcance), `sponsored` (contenido patrocinado: imagen + texto
+  descriptivo corto, pensado como formato nativo, no un simple banner).
+  `Campaign` gana `gamAdUnitPath`/`gamSizes`/`videoUrl`/`description` — todos al
+  final del constructor (compatibilidad con las llamadas posicionales
+  existentes) y con default `''`, así que cualquier campaña de un tipo que no
+  los usa simplemente los deja vacíos.
+- **Google Ad Manager**: mismo patrón que AdSense — `AdSlotRenderer` solo
+  define/muestra la unidad concreta (`googletag.defineSlot()` con la ruta y los
+  tamaños de la campaña, parseados de `"728x90,970x250"` a `[[728,90],[970,250]]`
+  por `AdSlotRenderer::parseGamSizes()`, que descarta un par mal escrito en vez
+  de romper la página); `gpt.js` (la librería de GAM) se encola una única vez
+  por página en `AdsServiceProvider::enqueueGamLoader()`
+  (`wp_enqueue_scripts`, igual que `enqueueAdSenseLoader()`), solo si hay
+  alguna campaña GAM activa. Mismo límite que AdSense: los clics/impresiones
+  reales de una unidad GAM los mide y los factura Google, no dnorte-core.
+- **Formulario reducido al tipo elegido**: antes se mostraban todos los campos
+  de todos los tipos a la vez, con una nota "se ignora si el tipo es...". Ahora
+  cada fila del formulario (`renderTextRow()`/`renderHtmlRow()`) puede llevar
+  un atributo `data-ad-fields-for="tipo1,tipo2"`, y un único `<script>` por
+  formulario (`AdsAdminPage::renderTypeToggleScript()`) oculta las filas que no
+  corresponden al `<select>` de Tipo actual, tanto al cargar la página (para
+  que "Editar campaña" ya arranque mostrando los campos correctos) como en cada
+  cambio de selección. Primer JS en un panel de administración de esta
+  plataforma (Turnos/Analítica no necesitan ninguno) — deliberadamente
+  vainilla, sin jQuery ni ninguna dependencia nueva.
+
 ## `Admin\AdminPage::$parentSlug` — ver "Menú de administración"
 
 Con tres módulos de administración ya registrados (Turnos, Analítica,

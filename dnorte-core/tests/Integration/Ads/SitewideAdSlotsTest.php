@@ -98,4 +98,42 @@ final class SitewideAdSlotsTest extends WP_UnitTestCase {
 		$registered = $wp_scripts->registered['dnorte-adsense'];
 		self::assertStringContainsString( 'client=ca-pub-1112223334', $registered->src );
 	}
+
+	public function test_enqueue_gam_loader_enqueues_gpt_js_when_an_active_gam_campaign_exists(): void {
+		global $wpdb;
+		( new CampaignRepository( new DatabaseManager( $wpdb ) ) )->save(
+			new Campaign(
+				0,
+				'GAM',
+				'Anunciante',
+				Campaign::TYPE_GAM,
+				true,
+				0,
+				array( 'cabecera' ),
+				array(),
+				null,
+				null,
+				'',
+				'',
+				'',
+				'',
+				'',
+				0,
+				0,
+				array(),
+				'',
+				'',
+				'/1234567/diariodelnorte/cabecera',
+				'728x90'
+			)
+		);
+
+		wp_dequeue_script( 'dnorte-gpt' );
+		wp_deregister_script( 'dnorte-gpt' );
+
+		$provider = new AdsServiceProvider( Application::instance()->container() );
+		$provider->enqueueGamLoader();
+
+		self::assertTrue( wp_script_is( 'dnorte-gpt', 'enqueued' ) );
+	}
 }

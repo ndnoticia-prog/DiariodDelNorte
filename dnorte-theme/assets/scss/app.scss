@@ -842,3 +842,20 @@ img {
 .dnorte-ad--final {
 	margin: var(--space-4) 0;
 }
+
+// Texto descriptivo del tipo "sponsored" (Ads\AdSlotRenderer::renderSponsored()),
+// debajo de la imagen — el mismo enlace envuelve ambos.
+.dnorte-ad__description {
+	display: block;
+	font-size: 0.875rem;
+	color: var(--color-text);
+	margin-top: var(--space-1);
+}
+
+// Los tipos "video"/"gam" no tienen ancho/alto intrínseco fijo como una <img> —
+// evita que un vídeo o una unidad de Ad Manager desborden el ancho del espacio.
+.dnorte-ad video,
+.dnorte-ad iframe {
+	max-width: 100%;
+	height: auto;
+}
