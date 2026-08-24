@@ -2,18 +2,81 @@
 // para que dnorte-media (si se añade en el futuro) pueda alinear `sizes` de
 // imágenes responsive a los mismos valores.
 //
-// Tipografía: pilas de fuentes del sistema (serif para titulares, sans para
-// cuerpo/UI) — sin cargar fuentes externas. Es una elección deliberada, no un
-// placeholder a medias: evita una petición de red adicional (rendimiento) y
-// una dependencia de terceros (privacidad) mientras no haya una guía de marca
-// real que exija una tipografía específica. El color de acento (--color-accent)
-// sí es un placeholder — sustituir por la identidad de marca real de Diario
-// del Norte en cuanto exista.
+// Tipografía: Playfair Display (titulares/masthead) + Source Sans 3 (cuerpo/UI),
+// autoalojadas (ver assets/fonts/README.md) — reemplaza desde v0.1.0-alpha.17 a
+// las pilas de fuentes del sistema que usaba el tema hasta ahora, a partir de la
+// maqueta real de portada que el cliente pidió igualar. Autoalojadas (no
+// fonts.googleapis.com) para no sumar una petición a un tercero en cada visita:
+// mismo motivo de rendimiento/privacidad que ya justificaba la elección anterior.
+// El color de acento (--color-accent) sigue siendo un placeholder razonable
+// (similar al rojo del logo real) — sustituir si la guía de marca formal define
+// un valor exacto distinto.
+
+@font-face {
+	font-family: 'Playfair Display';
+	font-style: normal;
+	font-weight: 700;
+	font-display: swap;
+	src: url('../fonts/playfair-display-700.woff2') format('woff2');
+}
+
+@font-face {
+	font-family: 'Playfair Display';
+	font-style: normal;
+	font-weight: 800;
+	font-display: swap;
+	src: url('../fonts/playfair-display-800.woff2') format('woff2');
+}
+
+@font-face {
+	font-family: 'Source Sans 3';
+	font-style: normal;
+	font-weight: 400;
+	font-display: swap;
+	src: url('../fonts/source-sans-3-400.woff2') format('woff2');
+}
+
+@font-face {
+	font-family: 'Source Sans 3';
+	font-style: normal;
+	font-weight: 600;
+	font-display: swap;
+	src: url('../fonts/source-sans-3-600.woff2') format('woff2');
+}
+
+@font-face {
+	font-family: 'Source Sans 3';
+	font-style: normal;
+	font-weight: 700;
+	font-display: swap;
+	src: url('../fonts/source-sans-3-700.woff2') format('woff2');
+}
 
 $breakpoint-sm: 480px;
 $breakpoint-md: 768px;
 $breakpoint-lg: 1024px;
 $breakpoint-xl: 1280px;
+
+// Color por categoría (kicker/etiquetas) — mapa cerrado por slug, con el acento
+// de marca como respaldo para cualquier categoría no listada aquí (una nueva
+// categoría nunca se queda sin etiqueta, solo sin color distintivo propio).
+$category-colors: (
+	'la-guajira': #0f6e5c,
+	'politica': #7a4fb5,
+	'judiciales': #1d5fa8,
+	'caribe': #0891a8,
+	'nacion': #b3121b,
+	'mundo': #b3121b,
+	'opinion': #a8631d,
+	'editorial': #1a1a1a,
+	'edicion-impresa': #1a1a1a,
+	'sociales': #c23b7a,
+	'deportes': #1c8a4a,
+	'entretenimiento': #a8631d,
+	'notas-rosas': #c23b7a,
+	'tecnologia': #1d5fa8,
+	'negocios': #0f6e5c,
+);
 
 :root {
 	--color-bg: #ffffff;
@@ -21,13 +84,13 @@ $breakpoint-xl: 1280px;
 	--color-text: #1a1a1a;
 	--color-text-muted: #5c5c5c;
 	--color-border: #e2e0db;
-	--color-accent: #b3121b; // placeholder — sustituir por la identidad de marca real
+	--color-accent: #b3121b; // placeholder razonable — ajustar si la guía de marca formal define otro valor
 	--color-accent-contrast: #ffffff;
 	--color-link: #8a0f17;
 	--color-link-visited: #6d1520;
 
-	--font-headline: georgia, 'Times New Roman', times, serif;
-	--font-body: system-ui, -apple-system, 'Segoe UI', roboto, sans-serif;
+	--font-headline: 'Playfair Display', georgia, 'Times New Roman', times, serif;
+	--font-body: 'Source Sans 3', system-ui, -apple-system, 'Segoe UI', roboto, sans-serif;
 
 	--space-1: 0.25rem;
 	--space-2: 0.5rem;
@@ -135,55 +198,105 @@ img {
 		padding: var(--space-1) var(--space-3);
 		display: flex;
 		align-items: center;
-		justify-content: space-between;
-		gap: var(--space-2);
+		justify-content: center;
+		gap: var(--space-1);
+		text-align: center;
+		flex-wrap: wrap;
 	}
 
+	.site-topbar__location,
 	.site-topbar__date {
 		// Sin text-transform: capitalize — en español solo va mayúscula la
 		// primera letra de la frase, no cada palabra ("de"/"agosto" en
 		// minúscula es lo correcto, no "De Agosto").
 		opacity: 0.85;
 	}
+
+	.site-topbar__sep {
+		opacity: 0.5;
+	}
 }
 
 .site-header {
-	border-bottom: 3px solid var(--color-accent);
 	background: var(--color-bg);
 
 	.site-header__inner {
 		max-width: $breakpoint-xl;
 		margin: 0 auto;
-		padding: var(--space-4) var(--space-3) var(--space-3);
-		display: flex;
+		padding: var(--space-3);
+		display: grid;
+		grid-template-columns: 2.25rem 1fr 2.25rem;
 		align-items: center;
-		justify-content: space-between;
 		gap: var(--space-3);
-		flex-wrap: wrap;
+
+		@media (min-width: $breakpoint-md) {
+			grid-template-columns: 1fr auto 1fr;
+		}
 	}
 }
 
 .site-branding {
+	text-align: center;
+	grid-column: 2;
+
 	a {
+		display: inline-block;
 		color: var(--color-text);
 		text-decoration: none;
-		font-family: var(--font-headline);
-		font-weight: 700;
-		font-size: clamp(1.5rem, 4vw, 2.25rem);
-		letter-spacing: -0.02em;
 	}
 
 	img {
-		max-height: 56px;
+		max-height: 64px;
 		width: auto;
+		margin: 0 auto;
+	}
+
+	// Sin logo personalizado ni respaldo de imagen: nombre del sitio en texto,
+	// con la misma tipografía de titular que el resto de la marca.
+	&__text {
+		font-family: var(--font-headline);
+		font-weight: 800;
+		font-size: clamp(1.5rem, 4vw, 2.25rem);
+		letter-spacing: -0.01em;
+	}
+
+	&__tagline {
+		display: block;
+		font-family: var(--font-body);
+		font-size: 0.75rem;
+		font-weight: 600;
+		text-transform: uppercase;
+		letter-spacing: 0.12em;
+		color: var(--color-text-muted);
+		margin-top: 0.15rem;
 	}
 }
 
-.header-controls {
+.site-header__actions {
+	grid-column: 3;
 	display: flex;
 	align-items: center;
-	flex-wrap: wrap;
-	gap: var(--space-3);
+	justify-content: flex-end;
+	gap: var(--space-2);
+}
+
+.site-header__search {
+	max-width: $breakpoint-xl;
+	margin: 0 auto;
+	padding: 0 var(--space-3);
+	max-height: 0;
+	overflow: hidden;
+	transition: max-height 0.2s ease;
+
+	&.is-open {
+		max-height: 4rem;
+		padding-bottom: var(--space-3);
+	}
+
+	.search-form {
+		max-width: 28rem;
+		margin: 0 auto;
+	}
 }
 
 .search-form {
@@ -191,8 +304,7 @@ img {
 	align-items: center;
 	border: 1px solid var(--color-border);
 	border-radius: 999px;
-	height: 2.25rem;
-	flex-shrink: 0;
+	height: 2.5rem;
 
 	&:focus-within {
 		border-color: var(--color-accent);
@@ -204,9 +316,9 @@ img {
 		border: 0;
 		color: var(--color-text);
 		font-family: var(--font-body);
-		font-size: 0.875rem;
+		font-size: 0.9375rem;
 		padding: 0 0 0 var(--space-3);
-		width: 9rem;
+		width: 100%;
 		min-width: 0;
 
 		&:focus {
@@ -222,8 +334,8 @@ img {
 		appearance: none;
 		background: none;
 		border: 0;
-		width: 2.25rem;
-		height: 2.25rem;
+		width: 2.5rem;
+		height: 2.5rem;
 		flex-shrink: 0;
 		display: inline-flex;
 		align-items: center;
@@ -243,31 +355,36 @@ img {
 	}
 }
 
-.theme-toggle {
+.icon-button {
 	appearance: none;
 	background: none;
-	border: 1px solid var(--color-border);
+	border: 0;
 	border-radius: 999px;
 	width: 2.25rem;
 	height: 2.25rem;
+	flex-shrink: 0;
 	display: inline-flex;
 	align-items: center;
 	justify-content: center;
 	cursor: pointer;
 	color: var(--color-text);
-	flex-shrink: 0;
 
 	&:hover,
 	&:focus-visible {
-		border-color: var(--color-accent);
 		color: var(--color-accent);
 	}
 
 	svg {
-		width: 1.1rem;
-		height: 1.1rem;
+		width: 1.25rem;
+		height: 1.25rem;
 	}
+}
 
+.search-toggle[aria-expanded='true'] {
+	color: var(--color-accent);
+}
+
+.theme-toggle {
 	.theme-toggle__icon--dark {
 		display: none;
 	}
@@ -284,72 +401,153 @@ img {
 }
 
 .nav-toggle {
-	appearance: none;
-	background: none;
-	border: 1px solid var(--color-border);
-	border-radius: var(--radius);
-	width: 2.25rem;
-	height: 2.25rem;
-	flex-shrink: 0;
-	display: none;
-	align-items: center;
-	justify-content: center;
-	cursor: pointer;
-	color: var(--color-text);
+	grid-column: 1;
 
-	svg {
-		width: 1.25rem;
-		height: 1.25rem;
-	}
-
-	@media (max-width: #{$breakpoint-md - 1px}) {
-		display: inline-flex;
+	@media (min-width: $breakpoint-md) {
+		display: none;
 	}
 }
 
+// ---------------------------------------------------------------------------
+// Barra de categorías (navegación principal)
+// ---------------------------------------------------------------------------
+
+.primary-nav {
+	background: var(--color-accent);
+	border-top: 1px solid rgb(0 0 0 / 12%);
+}
+
 .main-navigation {
+	max-width: $breakpoint-xl;
+	margin: 0 auto;
+	padding: 0 var(--space-3);
+
 	@media (max-width: #{$breakpoint-md - 1px}) {
-		flex-basis: 100%;
-		order: 3;
 		max-height: 0;
 		overflow: hidden;
-		transition: max-height 0.2s ease;
+		transition: max-height 0.25s ease;
 
 		&.is-open {
-			max-height: 24rem;
+			max-height: 32rem;
+			overflow-y: auto;
 		}
 	}
 
-	ul {
+	> ul {
 		list-style: none;
 		margin: 0;
 		padding: 0;
 		display: flex;
 		flex-wrap: wrap;
-		gap: var(--space-1) var(--space-4);
+		align-items: stretch;
 
 		@media (max-width: #{$breakpoint-md - 1px}) {
 			flex-direction: column;
-			gap: 0;
-			padding-top: var(--space-2);
+			padding: var(--space-2) 0;
+		}
+	}
+
+	li {
+		position: relative;
+
+		@media (min-width: $breakpoint-md) {
+			// Mantiene abierto el desplegable de "Más" mientras el foco/hover
+			// siga dentro (submenú incluido), no solo sobre el propio <a>.
+			&:hover > .sub-menu,
+			&:focus-within > .sub-menu {
+				display: block;
+			}
 		}
 	}
 
 	a {
-		display: inline-block;
-		padding: var(--space-2) 0;
-		color: var(--color-text);
+		display: flex;
+		align-items: center;
+		height: 100%;
+		padding: var(--space-2) var(--space-3);
+		color: var(--color-accent-contrast);
 		text-decoration: none;
-		font-weight: 600;
-		font-size: 0.9375rem;
+		font-family: var(--font-body);
+		font-weight: 700;
+		font-size: 0.8125rem;
 		text-transform: uppercase;
-		letter-spacing: 0.03em;
-		border-bottom: 2px solid transparent;
+		letter-spacing: 0.05em;
+		white-space: nowrap;
 
 		&:hover,
 		&:focus-visible {
-			color: var(--color-accent);
-			border-bottom-color: var(--color-accent);
+			background: rgb(0 0 0 / 12%);
+		}
+
+		@media (max-width: #{$breakpoint-md - 1px}) {
+			padding: var(--space-2) var(--space-1);
+		}
+	}
+
+	// WordPress marca el elemento activo con current-menu-item/current-menu-ancestor
+	// según la URL actual — sin JS ni lógica propia de plantilla.
+	.current-menu-item > a,
+	.current-menu-ancestor > a {
+		box-shadow: inset 0 0 0 1px rgb(255 255 255 / 55%);
+		border-radius: var(--radius);
+		margin: var(--space-1);
+		padding-top: calc(var(--space-2) - 1px);
+		padding-bottom: calc(var(--space-2) - 1px);
+	}
+
+	.menu-item-has-children > a::after {
+		content: '';
+		width: 0.4em;
+		height: 0.4em;
+		margin-left: 0.4em;
+		border-right: 2px solid currentcolor;
+		border-bottom: 2px solid currentcolor;
+		transform: rotate(45deg);
+		transition: transform 0.15s ease;
+	}
+
+	@media (min-width: $breakpoint-md) {
+		.menu-item-has-children:hover > a::after,
+		.menu-item-has-children:focus-within > a::after {
+			transform: rotate(-135deg);
+		}
+	}
+
+	.sub-menu {
+		list-style: none;
+		margin: 0;
+		padding: var(--space-1) 0;
+
+		@media (min-width: $breakpoint-md) {
+			display: none;
+			position: absolute;
+			top: 100%;
+			left: 0;
+			min-width: 12rem;
+			background: var(--color-bg);
+			box-shadow: var(--shadow-md);
+			border-radius: 0 0 var(--radius) var(--radius);
+			z-index: 20;
+
+			a {
+				color: var(--color-text);
+				font-weight: 600;
+				text-transform: none;
+				letter-spacing: 0;
+				font-size: 0.875rem;
+
+				&:hover,
+				&:focus-visible {
+					background: var(--color-surface);
+					color: var(--color-accent);
+				}
+			}
+		}
+
+		@media (max-width: #{$breakpoint-md - 1px}) {
+			padding-left: var(--space-3);
+			border-left: 2px solid rgb(255 255 255 / 30%);
+			margin-left: var(--space-2);
 		}
 	}
 }
@@ -365,7 +563,9 @@ img {
 	min-height: 40vh;
 }
 
-// Etiqueta de categoría, reutilizada por hero/tarjetas/artículo.
+// Etiqueta de categoría, reutilizada por hero/tarjetas/artículo. El color varía
+// por categoría (mapa $category-colors) vía data-category en el propio <a> —
+// ninguna plantilla necesita saber la paleta, solo pasa el slug real de WordPress.
 .kicker {
 	display: inline-block;
 	color: var(--color-accent);
@@ -381,6 +581,42 @@ img {
 	&:focus-visible {
 		text-decoration: underline;
 	}
+
+	@each $slug, $color in $category-colors {
+		&[data-category='#{$slug}'] {
+			color: $color;
+		}
+	}
+}
+
+// Variante en píldora (fondo sólido) — superpuesta a la imagen de una tarjeta.
+.kicker--pill {
+	background: var(--color-accent);
+	color: #fff;
+	padding: 0.2em 0.6em;
+	border-radius: 999px;
+	margin-bottom: 0;
+
+	&:hover,
+	&:focus-visible {
+		text-decoration: none;
+		filter: brightness(1.1);
+	}
+
+	@each $slug, $color in $category-colors {
+		&[data-category='#{$slug}'] {
+			background: $color;
+			color: #fff;
+		}
+	}
+}
+
+// Fecha de publicación, reutilizada por tarjetas/listas.
+.entry-date {
+	display: block;
+	color: var(--color-text-muted);
+	font-size: 0.75rem;
+	margin-top: var(--space-1);
 }
 
 // ---------------------------------------------------------------------------
@@ -423,11 +659,131 @@ img {
 }
 
 // ---------------------------------------------------------------------------
-// Bloque hero
+// Título de sección reutilizable (La Guajira, Judiciales, Opinión, Más
+// noticias...) — un único estilo para cualquier bloque de portada con
+// encabezado propio.
 // ---------------------------------------------------------------------------
 
-.block-hero {
+.section-heading {
+	font-family: var(--font-headline);
+	font-weight: 800;
+	font-size: 1.375rem;
+	border-bottom: 3px solid var(--color-accent);
+	padding-bottom: var(--space-2);
+	margin: 0 0 var(--space-3);
+}
+
+// ---------------------------------------------------------------------------
+// "Lo último": ticker + hero + tira de miniaturas, todo sobre el mismo grupo
+// de artículos recientes (HomeContentProvider::heroCarousel()). Sin JS, cada
+// miniatura/flecha es un <a> normal a su propio artículo — con JS
+// (initHeroCarousel(), assets/js/app.js) el clic en una miniatura o flecha
+// además intercambia la imagen/título/kicker del hero visible sin recargar,
+// usando los data-* que ya trae marcados cada miniatura.
+// ---------------------------------------------------------------------------
+
+.hero-carousel {
 	margin-bottom: var(--space-5);
+
+	&__ticker {
+		display: flex;
+		align-items: center;
+		gap: var(--space-2);
+		background: var(--color-text);
+		color: var(--color-bg);
+		border-radius: var(--radius) var(--radius) 0 0;
+		padding: var(--space-2) var(--space-3);
+	}
+
+	&__ticker-label {
+		flex-shrink: 0;
+		display: inline-flex;
+		align-items: center;
+		gap: 0.4em;
+		background: var(--color-accent);
+		color: #fff;
+		font-weight: 700;
+		font-size: 0.75rem;
+		text-transform: uppercase;
+		letter-spacing: 0.05em;
+		padding: 0.3em 0.7em;
+		border-radius: 999px;
+
+		&::before {
+			content: '';
+			width: 0.5em;
+			height: 0.5em;
+			border-radius: 50%;
+			background: #fff;
+		}
+	}
+
+	&__ticker-title {
+		flex: 1;
+		min-width: 0;
+		overflow: hidden;
+		text-overflow: ellipsis;
+		white-space: nowrap;
+		font-size: 0.9375rem;
+
+		a {
+			color: inherit;
+			text-decoration: none;
+
+			&:hover,
+			&:focus-visible {
+				text-decoration: underline;
+			}
+		}
+	}
+
+	&__ticker-nav {
+		flex-shrink: 0;
+		display: flex;
+		gap: var(--space-1);
+	}
+
+	&__ticker-btn {
+		appearance: none;
+		background: rgb(255 255 255 / 10%);
+		border: 0;
+		color: inherit;
+		width: 1.75rem;
+		height: 1.75rem;
+		border-radius: 50%;
+		cursor: pointer;
+		display: inline-flex;
+		align-items: center;
+		justify-content: center;
+
+		&:hover,
+		&:focus-visible {
+			background: rgb(255 255 255 / 25%);
+		}
+
+		svg {
+			width: 1rem;
+			height: 1rem;
+		}
+	}
+
+	&__grid {
+		display: grid;
+		gap: var(--space-3);
+		background: var(--color-surface);
+		border: 1px solid var(--color-border);
+		border-top: 0;
+		border-radius: 0 0 var(--radius) var(--radius);
+		padding: var(--space-3);
+
+		@media (min-width: $breakpoint-lg) {
+			grid-template-columns: 3fr 2fr;
+		}
+	}
+
+	&__main {
+		min-width: 0;
+	}
 
 	&__link {
 		display: block;
@@ -439,8 +795,93 @@ img {
 		border-radius: var(--radius);
 		overflow: hidden;
 		margin-bottom: var(--space-3);
-		background: var(--color-surface);
+		background: var(--color-bg);
 		aspect-ratio: 16 / 9;
+		position: relative;
+
+		img {
+			width: 100%;
+			height: 100%;
+			object-fit: cover;
+		}
+
+		.kicker--pill {
+			position: absolute;
+			top: var(--space-2);
+			left: var(--space-2);
+		}
+	}
+
+	&__title {
+		font-size: clamp(1.5rem, 3.5vw, 2.25rem);
+		margin: 0;
+
+		.hero-carousel__link:hover &,
+		.hero-carousel__link:focus-visible & {
+			text-decoration: underline;
+			text-decoration-color: var(--color-accent);
+		}
+	}
+
+	&__thumbs {
+		list-style: none;
+		display: flex;
+		gap: var(--space-2);
+		margin: var(--space-3) 0 0;
+		padding: 0;
+		overflow-x: auto;
+	}
+
+	&__thumb {
+		flex-shrink: 0;
+		width: 4.5rem;
+
+		a {
+			display: block;
+			color: inherit;
+			text-decoration: none;
+		}
+
+		img {
+			width: 100%;
+			aspect-ratio: 1;
+			object-fit: cover;
+			border-radius: var(--radius);
+			border: 2px solid transparent;
+		}
+
+		&.is-active img {
+			border-color: var(--color-accent);
+		}
+	}
+
+	&__aside {
+		display: grid;
+		grid-template-columns: repeat(2, 1fr);
+		gap: var(--space-3);
+		align-content: start;
+	}
+}
+
+// Tarjeta compacta reutilizada en la columna de "Lo último" y en bloques de
+// categoría (lista secundaria) — imagen pequeña + kicker + título + fecha.
+.mini-card {
+	display: flex;
+	gap: var(--space-2);
+	color: inherit;
+	text-decoration: none;
+
+	&--stacked {
+		flex-direction: column;
+	}
+
+	&__media {
+		flex-shrink: 0;
+		width: 4.5rem;
+		aspect-ratio: 1;
+		border-radius: var(--radius);
+		overflow: hidden;
+		background: var(--color-surface);
 
 		img {
 			width: 100%;
@@ -449,98 +890,28 @@ img {
 		}
 	}
 
-	&__title {
-		font-size: clamp(1.75rem, 4vw, 2.75rem);
-		margin: 0 0 var(--space-2);
+	&--stacked &__media {
+		width: 100%;
+		aspect-ratio: 4 / 3;
+	}
 
-		.block-hero__link:hover &,
-		.block-hero__link:focus-visible & {
+	&__title {
+		font-size: 0.9375rem;
+		font-weight: 700;
+		margin: 0;
+		line-height: 1.3;
+
+		&:hover,
+		&:focus-visible {
 			text-decoration: underline;
 			text-decoration-color: var(--color-accent);
 		}
 	}
-
-	&__excerpt {
-		color: var(--color-text-muted);
-		font-size: 1.0625rem;
-		max-width: 65ch;
-		margin: 0;
-	}
-
-	@media (min-width: $breakpoint-lg) {
-		&__link {
-			display: grid;
-			grid-template-columns: 3fr 2fr;
-			gap: var(--space-4);
-			align-items: center;
-		}
-
-		&__media {
-			margin-bottom: 0;
-		}
-	}
 }
 
 // ---------------------------------------------------------------------------
-// Bloque de última hora
+// Cuadrícula de artículos (archivos, "Más noticias")
 // ---------------------------------------------------------------------------
-
-.block-breaking {
-	display: flex;
-	align-items: flex-start;
-	gap: var(--space-3);
-	background: var(--color-surface);
-	border: 1px solid var(--color-border);
-	border-left: 4px solid var(--color-accent);
-	border-radius: var(--radius);
-	padding: var(--space-3);
-	margin-bottom: var(--space-5);
-	flex-wrap: wrap;
-
-	&__label {
-		flex-shrink: 0;
-		font-weight: 700;
-		text-transform: uppercase;
-		letter-spacing: 0.04em;
-		font-size: 0.8125rem;
-		color: var(--color-accent);
-		padding-top: 0.1rem;
-	}
-
-	&__list {
-		list-style: none;
-		margin: 0;
-		padding: 0;
-		display: flex;
-		flex-direction: column;
-		gap: var(--space-1);
-		flex: 1;
-		min-width: 200px;
-	}
-
-	a {
-		color: var(--color-text);
-		text-decoration: none;
-		font-size: 0.9375rem;
-
-		&:hover,
-		&:focus-visible {
-			color: var(--color-accent);
-			text-decoration: underline;
-		}
-	}
-}
-
-// ---------------------------------------------------------------------------
-// Cuadrícula de artículos (portada, archivos)
-// ---------------------------------------------------------------------------
-
-.block-latest__heading {
-	font-size: 1.375rem;
-	border-bottom: 2px solid var(--color-border);
-	padding-bottom: var(--space-2);
-	margin-bottom: var(--space-3);
-}
 
 .post-grid {
 	display: grid;
@@ -557,6 +928,7 @@ img {
 	}
 
 	&__media {
+		position: relative;
 		border-radius: var(--radius);
 		overflow: hidden;
 		margin-bottom: var(--space-2);
@@ -568,6 +940,12 @@ img {
 			height: 100%;
 			object-fit: cover;
 			transition: transform 0.2s ease;
+		}
+
+		.kicker--pill {
+			position: absolute;
+			top: var(--space-2);
+			left: var(--space-2);
 		}
 	}
 
@@ -585,6 +963,316 @@ img {
 	&__link:hover &__media img,
 	&__link:focus-visible &__media img {
 		transform: scale(1.03);
+	}
+}
+
+// ---------------------------------------------------------------------------
+// Bloque de categoría (La Guajira, Judiciales...): N tarjetas destacadas +
+// una lista secundaria más compacta, o solo cuadrícula densa según el tipo.
+// ---------------------------------------------------------------------------
+
+.category-block {
+	margin-bottom: var(--space-5);
+
+	&__featured {
+		display: grid;
+		grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+		gap: var(--space-4);
+		margin-bottom: var(--space-4);
+	}
+
+	&__list {
+		display: grid;
+		grid-template-columns: 1fr;
+		gap: var(--space-3);
+
+		@media (min-width: $breakpoint-sm) {
+			grid-template-columns: repeat(2, 1fr);
+		}
+	}
+
+	&__dense {
+		display: grid;
+		grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+		gap: var(--space-3);
+	}
+}
+
+// ---------------------------------------------------------------------------
+// Opinión: tira horizontal de columnistas
+// ---------------------------------------------------------------------------
+
+.opinion-strip {
+	margin-bottom: var(--space-5);
+
+	&__track {
+		display: flex;
+		gap: var(--space-4);
+		overflow-x: auto;
+		padding-bottom: var(--space-2);
+		scroll-snap-type: x proximity;
+	}
+
+	&__card {
+		flex: 0 0 auto;
+		width: 13rem;
+		scroll-snap-align: start;
+		color: inherit;
+		text-decoration: none;
+	}
+
+	&__avatar {
+		width: 4rem;
+		height: 4rem;
+		border-radius: 50%;
+		overflow: hidden;
+		margin-bottom: var(--space-2);
+		background: var(--color-surface);
+
+		img {
+			width: 100%;
+			height: 100%;
+			object-fit: cover;
+		}
+	}
+
+	&__title {
+		font-size: 1rem;
+		margin: var(--space-1) 0 0;
+
+		&:hover,
+		&:focus-visible {
+			text-decoration: underline;
+			text-decoration-color: var(--color-accent);
+		}
+	}
+}
+
+// ---------------------------------------------------------------------------
+// Banner promocional (WhatsApp) — configurable desde el Personalizador
+// (ThemeServiceProvider::registerCustomizer()); no se imprime nada si no hay
+// número configurado.
+// ---------------------------------------------------------------------------
+
+.promo-banner {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	gap: var(--space-3);
+	background: var(--color-accent);
+	color: #fff;
+	border-radius: var(--radius);
+	padding: var(--space-3) var(--space-4);
+	margin-bottom: var(--space-5);
+	text-align: center;
+	flex-wrap: wrap;
+
+	&__text {
+		font-family: var(--font-headline);
+		font-weight: 800;
+		font-size: 1.125rem;
+	}
+
+	&__cta {
+		flex-shrink: 0;
+		display: inline-flex;
+		align-items: center;
+		gap: 0.4em;
+		background: #fff;
+		color: var(--color-accent);
+		text-decoration: none;
+		font-weight: 700;
+		font-size: 0.875rem;
+		padding: 0.6em 1.2em;
+		border-radius: 999px;
+
+		&:hover,
+		&:focus-visible {
+			filter: brightness(0.95);
+		}
+	}
+}
+
+// ---------------------------------------------------------------------------
+// Fila de tres columnas: Judiciales / Editorial / Lo más leído
+// ---------------------------------------------------------------------------
+
+.triptych {
+	display: grid;
+	gap: var(--space-5);
+	margin-bottom: var(--space-5);
+
+	@media (min-width: $breakpoint-lg) {
+		grid-template-columns: 1.4fr 1fr 1fr;
+	}
+}
+
+.editorial-column {
+	&__post {
+		display: block;
+		color: inherit;
+		text-decoration: none;
+		margin-bottom: var(--space-4);
+	}
+
+	&__media {
+		border-radius: var(--radius);
+		overflow: hidden;
+		aspect-ratio: 4 / 3;
+		background: var(--color-surface);
+		margin-bottom: var(--space-2);
+
+		img {
+			width: 100%;
+			height: 100%;
+			object-fit: cover;
+		}
+	}
+
+	&__title {
+		font-size: 1.0625rem;
+		margin: 0 0 var(--space-1);
+
+		&:hover,
+		&:focus-visible {
+			text-decoration: underline;
+			text-decoration-color: var(--color-accent);
+		}
+	}
+
+	&__meta {
+		color: var(--color-text-muted);
+		font-size: 0.8125rem;
+	}
+
+	&__print {
+		display: flex;
+		gap: var(--space-3);
+		align-items: center;
+		border-top: 1px solid var(--color-border);
+		padding-top: var(--space-3);
+	}
+
+	&__print-cover {
+		flex-shrink: 0;
+		width: 4.5rem;
+		aspect-ratio: 3 / 4;
+		border-radius: var(--radius);
+		overflow: hidden;
+		background: var(--color-surface);
+		box-shadow: var(--shadow-sm);
+
+		img {
+			width: 100%;
+			height: 100%;
+			object-fit: cover;
+		}
+	}
+
+	&__print-caption {
+		font-size: 0.875rem;
+		color: var(--color-text-muted);
+	}
+}
+
+.most-read {
+	list-style: none;
+	margin: 0;
+	padding: 0;
+	counter-reset: most-read;
+
+	li {
+		counter-increment: most-read;
+		display: flex;
+		align-items: center;
+		gap: var(--space-3);
+		padding: var(--space-2) 0;
+		border-bottom: 1px solid var(--color-border);
+
+		&:last-child {
+			border-bottom: 0;
+		}
+	}
+
+	&__rank {
+		flex-shrink: 0;
+		font-family: var(--font-headline);
+		font-weight: 800;
+		font-size: 1.5rem;
+		color: var(--color-border);
+		width: 1.75rem;
+
+		&::before {
+			content: counter(most-read, decimal-leading-zero);
+		}
+	}
+
+	&__media {
+		flex-shrink: 0;
+		width: 3.25rem;
+		aspect-ratio: 1;
+		border-radius: var(--radius);
+		overflow: hidden;
+		background: var(--color-surface);
+
+		img {
+			width: 100%;
+			height: 100%;
+			object-fit: cover;
+		}
+	}
+
+	&__title {
+		font-size: 0.9375rem;
+		font-weight: 700;
+		margin: 0;
+		line-height: 1.3;
+
+		&:hover,
+		&:focus-visible {
+			text-decoration: underline;
+			text-decoration-color: var(--color-accent);
+		}
+	}
+}
+
+// ---------------------------------------------------------------------------
+// "Más noticias" + Cargar más (assets/js/app.js: initLoadMore(), vía la REST
+// API nativa de WordPress — wp/v2/posts — sin endpoint propio nuevo)
+// ---------------------------------------------------------------------------
+
+.news-grid {
+	margin-bottom: var(--space-4);
+}
+
+.load-more {
+	display: flex;
+	justify-content: center;
+	margin-top: var(--space-4);
+
+	&__button {
+		appearance: none;
+		background: none;
+		border: 2px solid var(--color-text);
+		color: var(--color-text);
+		font-family: var(--font-body);
+		font-weight: 700;
+		font-size: 0.875rem;
+		text-transform: uppercase;
+		letter-spacing: 0.05em;
+		padding: 0.75em 2em;
+		border-radius: 999px;
+		cursor: pointer;
+
+		&:hover,
+		&:focus-visible {
+			background: var(--color-text);
+			color: var(--color-bg);
+		}
+
+		&[hidden] {
+			display: none;
+		}
 	}
 }
 
@@ -783,16 +1471,80 @@ img {
 		padding: var(--space-4) var(--space-3);
 	}
 
-	.footer-navigation ul {
+	.site-footer__top {
+		display: grid;
+		gap: var(--space-4);
+		padding-bottom: var(--space-4);
+
+		@media (min-width: $breakpoint-md) {
+			grid-template-columns: 1.4fr 1fr 1fr;
+		}
+	}
+
+	.site-footer__brand {
+		img {
+			max-height: 40px;
+			width: auto;
+			margin-bottom: var(--space-2);
+		}
+
+		p {
+			color: var(--color-text-muted);
+			font-size: 0.8125rem;
+			max-width: 32ch;
+			margin: 0;
+		}
+	}
+
+	.site-footer__heading {
+		font-family: var(--font-body);
+		font-weight: 700;
+		font-size: 0.8125rem;
+		text-transform: uppercase;
+		letter-spacing: 0.05em;
+		margin: 0 0 var(--space-2);
+	}
+
+	.site-footer__social {
+		display: flex;
+		gap: var(--space-2);
+	}
+
+	.social-icon {
+		display: inline-flex;
+		align-items: center;
+		justify-content: center;
+		width: 2.25rem;
+		height: 2.25rem;
+		border-radius: 50%;
+		background: var(--color-bg);
+		border: 1px solid var(--color-border);
+		color: var(--color-text);
+
+		&:hover,
+		&:focus-visible {
+			border-color: var(--color-accent);
+			color: var(--color-accent);
+		}
+
+		svg {
+			width: 1.1rem;
+			height: 1.1rem;
+		}
+	}
+
+	.footer-navigation ul,
+	.legal-navigation ul {
 		list-style: none;
-		margin: 0 0 var(--space-3);
+		margin: 0;
 		padding: 0;
 		display: flex;
 		flex-wrap: wrap;
 		gap: var(--space-2) var(--space-4);
 	}
 
-	.footer-navigation a {
+	.footer-navigation a,
+	.legal-navigation a {
 		color: var(--color-text-muted);
 		text-decoration: none;
 		font-size: 0.875rem;
@@ -801,6 +1553,20 @@ img {
 		&:focus-visible {
 			color: var(--color-accent);
 		}
+	}
+
+	.site-footer__bottom {
+		display: flex;
+		flex-wrap: wrap;
+		align-items: center;
+		justify-content: space-between;
+		gap: var(--space-2);
+		border-top: 1px solid var(--color-border);
+		padding-top: var(--space-3);
+	}
+
+	.legal-navigation a {
+		font-size: 0.8125rem;
 	}
 
 	.site-info {

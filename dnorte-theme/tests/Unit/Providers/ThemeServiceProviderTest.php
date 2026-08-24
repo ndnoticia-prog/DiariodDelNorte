@@ -19,7 +19,7 @@ final class ThemeServiceProviderTest extends TestCase {
 		$wiredHooks = array();
 
 		Functions\expect( 'add_action' )
-			->times( 3 )
+			->times( 6 )
 			->andReturnUsing(
 				function ( string $hook ) use ( &$wiredHooks ): bool {
 					$wiredHooks[] = $hook;
@@ -35,12 +35,16 @@ final class ThemeServiceProviderTest extends TestCase {
 		$provider = new ThemeServiceProvider( $container );
 		$provider->boot();
 
-		// register_nav_menus() se llama en after_setup_theme, no en un hook propio (ver
-		// el bug real documentado en el docblock de ThemeServiceProvider::boot()); por
-		// eso 'after_setup_theme' aparece dos veces y no 'register_nav_menus'.
+		// register_nav_menus()/registerImageSizes()/seedDefaultContent() se llaman en
+		// after_setup_theme, no en un hook propio (ver el bug real documentado en el
+		// docblock de ThemeServiceProvider::boot()); por eso 'after_setup_theme'
+		// aparece cuatro veces.
 		$hooks->flush();
 
-		self::assertSame( array( 'after_setup_theme', 'after_setup_theme', 'wp_enqueue_scripts' ), $wiredHooks );
+		self::assertSame(
+			array( 'after_setup_theme', 'after_setup_theme', 'after_setup_theme', 'after_setup_theme', 'wp_enqueue_scripts', 'customize_register' ),
+			$wiredHooks
+		);
 	}
 
 	public function test_register_theme_supports_enables_the_expected_features(): void {
@@ -58,7 +62,7 @@ final class ThemeServiceProviderTest extends TestCase {
 		( new ThemeServiceProvider( new Container() ) )->registerThemeSupports();
 
 		self::assertSame(
-			array( 'title-tag', 'post-thumbnails', 'html5', 'automatic-feed-links', 'responsive-embeds' ),
+			array( 'title-tag', 'post-thumbnails', 'html5', 'automatic-feed-links', 'responsive-embeds', 'custom-logo' ),
 			$enabled
 		);
 	}
@@ -76,6 +80,28 @@ final class ThemeServiceProviderTest extends TestCase {
 
 		( new ThemeServiceProvider( new Container() ) )->registerMenus();
 
-		self::assertSame( array( 'primary', 'footer' ), array_keys( (array) $registered ) );
+		self::assertSame( array( 'primary', 'footer', 'footer_sites' ), array_keys( (array) $registered ) );
+	}
+
+	public function test_register_image_sizes_registers_the_expected_sizes(): void {
+		$registered = array();
+
+		Functions\expect( 'add_image_size' )
+			->times( 2 )
+			->andReturnUsing(
+				function ( string $name, int $width, int $height, bool $crop ) use ( &$registered ): void {
+					$registered[ $name ] = array( $width, $height, $crop );
+				}
+			);
+
+		( new ThemeServiceProvider( new Container() ) )->registerImageSizes();
+
+		self::assertSame(
+			array(
+				'dnorte-card'  => array( 480, 360, true ),
+				'dnorte-thumb' => array( 160, 160, true ),
+			),
+			$registered
+		);
 	}
 }

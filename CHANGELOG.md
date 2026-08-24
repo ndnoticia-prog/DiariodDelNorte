@@ -2,6 +2,53 @@
 
 Formato basado en [Keep a Changelog](https://keepachangelog.com/es-ES/1.0.0/).
 
+## [Unreleased] — v0.1.0-alpha.17
+
+### Added
+
+- `dnorte-theme`: portada rediseñada por completo a partir de una maqueta
+  real del cliente — cabecera con logo/ubicación/buscador colapsable, barra
+  de categorías con desplegable "Más", "Lo último" (hero + miniaturas +
+  columna de tarjetas), bloques de categoría (La Guajira, Judiciales),
+  Opinión, banner de WhatsApp (configurable, no forma parte del sistema de
+  publicidad), Judiciales/Editorial+Edición Impresa/Lo más leído a tres
+  columnas, y "Más noticias" con "Cargar más" (vía la API REST nativa de
+  WordPress). Ver `Content\HomeContentProvider` (reescrita) y los nuevos
+  `template-parts/blocks/*`.
+- `dnorte-theme`: tipografía real autoalojada (`Playfair Display` +
+  `Source Sans 3`, ver `assets/fonts/README.md`), reemplaza las pilas de
+  fuentes del sistema.
+- `dnorte-theme`: `Content\DefaultContentSeeder` — siembra una única vez las
+  19 categorías de la maqueta y el menú principal correspondiente, para que
+  un sitio recién desplegado no dependa de que alguien arme 21 elementos de
+  menú a mano.
+- `dnorte-theme`: soporte de `custom-logo` (faltaba `add_theme_support`, el
+  Personalizador nunca mostraba la opción) y un panel "Diario del Norte" en
+  el Personalizador (ciudad de la barra superior, número de WhatsApp, redes
+  sociales).
+
+### Fixed
+
+- `dnorte-theme`: `vite.config.js` generaba URLs absolutas desde la raíz del
+  dominio (`/assets/foo.woff2`) para las fuentes autoalojadas — rotas en
+  cualquier instalación real de WordPress, donde el tema vive en
+  `/wp-content/themes/dnorte-theme/`, no en la raíz. Corregido con
+  `base: './'`; encontrado en la propia verificación en el navegador de esta
+  versión (404 silenciosos, sin ningún error de PHP).
+
+### Verified
+
+- `composer run check` (0 errores PHPCS, 0 errores PHPStan nivel máximo, 4
+  pruebas unitarias) y `composer test:integration` (15 pruebas: 9 de
+  `HomeContentProviderTest`, 6 de `DefaultContentSeederTest`) en verde.
+- WordPress real de desarrollo: portada completa verificada visualmente
+  (cabecera, "Lo último", La Guajira, Opinión, Judiciales/Editorial/Lo más
+  leído, "Más noticias"), modo oscuro, vista móvil, menú "Más" desplegable
+  (9 subcategorías anidadas correctamente), "Cargar más" probado en vivo
+  (8→16 tarjetas vía `wp/v2/posts`), fuentes autoalojadas confirmadas
+  (`document.fonts.status === 'loaded'`, sin 404), `debug.log` vacío en todo
+  el recorrido.
+
 ## [Unreleased] — v0.1.0-alpha.16
 
 ### Added

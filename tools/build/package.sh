@@ -71,6 +71,13 @@ package_dnorte_theme() {
 	cp -R "${ROOT_DIR}/dnorte-theme/template-parts" "${stage}/template-parts"
 	cp -R "${ROOT_DIR}/dnorte-theme/src" "${stage}/src"
 	cp -R "${ROOT_DIR}/dnorte-theme/dist" "${stage}/dist"
+	# Solo assets/images (el logo real, servido directo por PHP en header.php/
+	# footer.php — desde v0.1.0-alpha.17). assets/fonts y assets/scss|js NO se
+	# copian: son fuente de Vite, ya compilada dentro de dist/ (las fuentes woff2
+	# las copia Vite solo a dist/assets/ por referenciarse desde app.scss);
+	# copiar también la carpeta assets/ completa duplicaría ese peso en el zip.
+	mkdir -p "${stage}/assets"
+	cp -R "${ROOT_DIR}/dnorte-theme/assets/images" "${stage}/assets/images"
 
 	mkdir -p "${DIST_DIR}"
 	local zip_path="${DIST_DIR}/dnorte-theme-${version}.zip"

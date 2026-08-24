@@ -535,6 +535,39 @@ como PDF" del navegador.
       (`vendor/` de solo producción, sin PHPUnit/Mockery/PHPStan/WPCS);
       `debug.log` vacío en todo el recorrido.
 
+## v0.1.0-alpha.17 — Portada real y tipografía de marca
+
+Rediseño completo de la portada de `dnorte-theme` a partir de una maqueta
+real del cliente, con mejoras de tipografía y usando los espacios
+publicitarios ya definidos (alpha.12).
+
+- [x] Cabecera (logo real/ubicación/buscador colapsable), barra de categorías
+      con desplegable "Más" (9 subcategorías anidadas).
+- [x] "Lo último" (hero + tira de miniaturas + columna de tarjetas), bloques
+      de categoría (La Guajira, Judiciales), Opinión, Editorial + Edición
+      Impresa (reutiliza el patrón de categoría, sin sistema nuevo de PDF/
+      portada), Lo más leído (ranking real vía Analítica propia, con
+      respaldo a artículos recientes), "Más noticias" con "Cargar más" (API
+      REST nativa de WordPress).
+- [x] Banner de WhatsApp configurable desde el Personalizador — no forma
+      parte del sistema de publicidad.
+- [x] Tipografía real autoalojada (Playfair Display + Source Sans 3),
+      reemplaza las pilas de fuentes del sistema.
+- [x] `Content\DefaultContentSeeder` — siembra una única vez las 19
+      categorías de la maqueta y el menú principal correspondiente.
+- [x] Soporte de `custom-logo` (faltaba, el Personalizador nunca mostraba la
+      opción).
+- [x] **Bug real encontrado en la verificación del navegador**: `vite.config.js`
+      generaba URLs absolutas desde la raíz del dominio para las fuentes
+      autoalojadas, rotas en cualquier instalación real de WordPress.
+      Corregido con `base: './'`. Ver "Fixed" en `CHANGELOG.md`.
+- [x] 4 pruebas unitarias y 15 de integración nuevas. `composer run check` y
+      `composer test:integration` en verde.
+- [x] Verificado en el WordPress real de desarrollo: portada completa,
+      modo oscuro, vista móvil, menú "Más" desplegable, "Cargar más" probado
+      en vivo, fuentes autoalojadas confirmadas cargando sin 404, `debug.log`
+      vacío en todo el recorrido.
+
 ## Próximas versiones (por decidir)
 
 **IA: descartada.** Estaba en el alcance técnico original, pero el cliente
@@ -544,7 +577,8 @@ workflow editorial, el panel de turnos, la búsqueda interna, la analítica
 propia y la publicidad propia ya se cerraron (alpha.9–alpha.16); con IA
 descartada, no queda alcance técnico pendiente confirmado por el cliente.
 
-En lo estético: guía de marca real de Diario del Norte (sustituir el color de
-acento placeholder) — el logo real ya se incorporó al PDF del informe en
-alpha.16, pero todavía no al front-end del sitio ni al panel de
-administración.
+En lo estético: guía de marca real de Diario del Norte — la tipografía y el
+logo real ya se incorporaron al front-end del sitio en alpha.17 (y al PDF del
+informe de publicidad desde alpha.16); solo queda pendiente el color de
+acento exacto si la guía de marca formal llega a definir uno distinto al
+placeholder actual, y aplicar el logo real al panel de administración.

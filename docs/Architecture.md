@@ -642,6 +642,88 @@ incrustada (no solo enlazada) — esta versión lo reemplaza:
   ese archivo hay que correr `composer dump-autoload` dentro de
   `tools/wp-tests/phpunit9/`.
 
+## Portada real de `dnorte-theme` (v0.1.0-alpha.17)
+
+Rediseño completo de `front-page.php` a partir de una maqueta real del
+cliente: cabecera con logo/ubicación/buscador colapsable, barra de categorías
+con desplegable "Más", grupo "Lo último" (hero + tira de miniaturas + columna
+de tarjetas), bloques de categoría (La Guajira, Judiciales), Opinión,
+Editorial + Edición Impresa, Lo más leído y "Más noticias" con "Cargar más".
+
+- **Tipografía autoalojada**: `Playfair Display` (titulares) + `Source Sans 3`
+  (cuerpo/UI), ver `assets/fonts/README.md`. Reemplaza las pilas de fuentes
+  del sistema que el tema usaba hasta ahora — el motivo para no cargarlas
+  desde Google Fonts sigue siendo el mismo (evitar una petición a un
+  tercero en cada visita), autoalojar simplemente resuelve la fidelidad
+  visual sin reabrir esa concesión.
+  - **`vite.config.js` necesita `base: './'`**: por defecto Vite genera
+    `url(/assets/foo.woff2)` (absoluta desde la raíz del dominio) para
+    cualquier asset referenciado en CSS — correcto para una SPA servida
+    desde la raíz, roto para un tema de WordPress, que vive en
+    `/wp-content/themes/dnorte-theme/`. Bug real encontrado en la
+    verificación en el navegador (`read_network_requests` mostrando 404 en
+    `/assets/*.woff2` en vez de `/wp-content/themes/dnorte-theme/dist/
+    assets/*.woff2`) — sin este ajuste, las fuentes fallan en silencio (sin
+    ningún error de PHP) y el navegador cae a la pila de respaldo.
+- **`Content\DefaultContentSeeder`**: siembra, una única vez por sitio, las 19
+  categorías de la maqueta (10 de primer nivel + las 9 de "Más") y un menú
+  `primary` con esa misma estructura — para que un sitio recién desplegado
+  tenga dónde enlazar y qué mostrar en cada bloque sin que el cliente arme
+  21 elementos de menú a mano. Enganchado a `after_setup_theme` (corre en
+  cada carga) con una opción (`dnorte_theme_default_content_seeded`) como
+  guarda de "ya sembrado" — **nunca a `after_switch_theme`**, que solo
+  dispara al cambiar de tema activo, no al actualizar la versión de un tema
+  que ya estaba activo (el caso real de desplegar esta versión sobre un
+  sitio que ya tiene `dnorte-theme` puesto). Nunca pisa una categoría que ya
+  exista (busca por slug) ni un menú ya asignado a `primary` — si el equipo
+  editorial ya armó el suyo, esta clase no lo vuelve a tocar jamás.
+- **`Content\HomeContentProvider`** reescrita por completo: una `WP_Query`
+  por sección (hero/miniaturas, columna aparte, por categoría, "Más
+  noticias") en vez de la única consulta repartida por posición que usaba la
+  versión anterior — cada sección tiene un origen distinto (categoría
+  concreta, o ranking por vistas en vez de fecha) que no cabe en una sola
+  consulta. Deduplicación deliberadamente parcial: "Más noticias" excluye
+  los posts ya mostrados en "Lo último" (mismo fondo común de "más
+  recientes", ahí el duplicado se vería como un error de plantilla) pero los
+  bloques de categoría NO se excluyen entre sí ni contra el hero — un
+  artículo puede ser a la vez la noticia más comentada del momento y
+  pertenecer a La Guajira; eso es real en cualquier portada de diario, no un
+  bug.
+- **"Lo más leído" reutiliza `Analytics\Pageviews\PageviewRepository::
+  topArticlesSince()`** (ya existente desde la analítica propia) resuelto vía
+  `Application::instance()->container()->get(...)` — con `try/catch` porque
+  ese contenedor no siempre está arrancado (ej. las pruebas de integración de
+  `dnorte-theme` no cargan `dnorte-core.php`, ver `tests/Integration/
+  bootstrap.php`; o un sitio real con Analítica desactivada) — si falla o no
+  hay suficientes vistas todavía, completa con los artículos más recientes en
+  su lugar, nunca deja la sección vacía ni rota por falta de datos
+  históricos.
+- **"Edición impresa" reutiliza el mismo patrón de categoría** que el resto
+  de bloques (el último post de la categoría `edicion-impresa`, su imagen
+  destacada hace de "portada" del día) — deliberadamente, para no construir
+  un sistema nuevo de subida de PDF/portada en esta pasada.
+- **Banner de WhatsApp**: no es ninguno de los cinco espacios de publicidad
+  (`Ads\AdSlotRenderer`) — es un ajuste propio del tema
+  (`ThemeServiceProvider::registerCustomizer()`, panel "Diario del Norte" en
+  el Personalizador: ciudad de la barra superior, número de WhatsApp, redes
+  sociales). Sin número configurado, el banner no se imprime — nunca un
+  número de ejemplo simulando ser real.
+- **"Cargar más"** usa la API REST nativa de WordPress (`wp/v2/posts`, con
+  `_embed=1` para traer imagen destacada y categoría) desde
+  `assets/js/app.js` — sin endpoint propio nuevo. Degrada sin JS: el resto de
+  la portada funciona igual, el botón simplemente no responde.
+- **Color por categoría**: mapa cerrado `$category-colors` en `app.scss`,
+  aplicado vía `data-category="{slug}"` en el propio `<a class="kicker">` —
+  ninguna plantilla PHP conoce la paleta, solo pasa el slug real de
+  WordPress; una categoría sin entrada en el mapa cae al acento de marca.
+- **`custom-logo`**: el tema no lo declaraba (`add_theme_support`) hasta
+  ahora, así que el Personalizador nunca mostraba la opción de subir un
+  logo — corregido. Respaldo si no hay uno subido:
+  `assets/images/dnorte-logo.png` (copia propia del logo real, independiente
+  del ejemplar que usa `dnorte-core` para el PDF de "Generar informe" — cada
+  paquete es autónomo, ninguno depende de la estructura interna de
+  `assets/` del otro).
+
 ## `Admin\AdminPage::$parentSlug` — ver "Menú de administración"
 
 Con tres módulos de administración ya registrados (Turnos, Analítica,
