@@ -537,11 +537,14 @@ como PDF" del navegador.
 
 ## Próximas versiones (por decidir)
 
-Alcance técnico restante, confirmado explícitamente por el cliente: IA — con la
-misma pregunta previa de si un plugin ya probado o una función nativa de
-WordPress lo resuelve sin construir nada nuevo (ver `docs/handoff-nd-platform.md`
-§8). El workflow editorial, el panel de turnos, la búsqueda interna, la
-analítica propia y la publicidad propia ya se cerraron (alpha.9–alpha.16). En lo
-estético: guía de marca real de Diario del Norte (sustituir el color de acento
-placeholder) — el logo real ya se incorporó al PDF del informe en alpha.16, pero
-todavía no al front-end del sitio ni al panel de administración.
+**IA: descartada.** Estaba en el alcance técnico original, pero el cliente
+canceló explícitamente este componente (confirmado en la conversación de
+`v0.1.0-alpha.16`) — no se construye nada de IA en esta plataforma. El
+workflow editorial, el panel de turnos, la búsqueda interna, la analítica
+propia y la publicidad propia ya se cerraron (alpha.9–alpha.16); con IA
+descartada, no queda alcance técnico pendiente confirmado por el cliente.
+
+En lo estético: guía de marca real de Diario del Norte (sustituir el color de
+acento placeholder) — el logo real ya se incorporó al PDF del informe en
+alpha.16, pero todavía no al front-end del sitio ni al panel de
+administración.
