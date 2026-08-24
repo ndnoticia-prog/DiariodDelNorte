@@ -24,10 +24,16 @@ package_dnorte_core() {
 	cp "${ROOT_DIR}/dnorte-core/dnorte-core.php" "${stage}/"
 	cp -R "${ROOT_DIR}/dnorte-core/src" "${stage}/src"
 	cp -R "${ROOT_DIR}/dnorte-core/config" "${stage}/config"
+	cp -R "${ROOT_DIR}/dnorte-core/assets" "${stage}/assets"
+	cp "${ROOT_DIR}/dnorte-core/composer.json" "${ROOT_DIR}/dnorte-core/composer.lock" "${stage}/"
 
-	# Sin dependencias de producción todavía (composer.json "require" solo pide PHP);
-	# si en el futuro se añade alguna, aquí iría un
-	# `composer install --no-dev --working-dir="${stage}"` antes de zipear.
+	# Primera dependencia de producción real de la plataforma (dompdf, para
+	# Ads\CampaignReportPdfRenderer) desde v0.1.0-alpha.16 — antes "require" solo
+	# pedía PHP y no hacía falta ningún vendor/ en el zip. `--no-dev` deja fuera
+	# PHPUnit/PHPStan/WPCS/etc (nunca deben viajar al sitio real); el composer.json/
+	# .lock copiados se borran después de instalar, el zip final no los necesita.
+	( cd "${stage}" && composer install --no-dev --no-interaction --optimize-autoloader --quiet )
+	rm -f "${stage}/composer.json" "${stage}/composer.lock"
 
 	mkdir -p "${DIST_DIR}"
 	local zip_path="${DIST_DIR}/dnorte-core-${version}.zip"

@@ -37,6 +37,9 @@ final class AdsServiceProviderTest extends TestCase {
 		Functions\expect( 'add_action' )
 			->once()
 			->with( 'wp_footer', Mockery::type( 'callable' ), 20, 1 );
+		Functions\expect( 'add_action' )
+			->once()
+			->with( 'admin_init', Mockery::type( 'callable' ), 10, 1 );
 		Functions\expect( 'add_filter' )
 			->once()
 			->with( 'the_content', Mockery::type( 'callable' ), 20, 1 );

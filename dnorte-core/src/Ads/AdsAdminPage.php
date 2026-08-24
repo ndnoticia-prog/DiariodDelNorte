@@ -30,10 +30,13 @@ use WP_Error;
 
 final class AdsAdminPage implements RegistersAdminPages {
 
-	private const CAPABILITY    = 'manage_options';
-	private const NONCE_ACTION  = 'dnorte_ads_manage';
-	private const NONCE_FIELD   = 'dnorte_ads_nonce';
-	private const TYPES         = array(
+	private const CAPABILITY   = 'manage_options';
+	private const NONCE_ACTION = 'dnorte_ads_manage';
+	private const NONCE_FIELD  = 'dnorte_ads_nonce';
+	// Público (no privado, como el resto de const de esta clase): AdsServiceProvider::
+	// maybeDownloadReportPdf() necesita la misma etiqueta para armar el PDF fuera de
+	// esta clase, sin duplicar el mapa.
+	public const TYPES          = array(
 		Campaign::TYPE_ADSENSE   => 'Google AdSense',
 		Campaign::TYPE_GAM       => 'Google Ad Manager',
 		Campaign::TYPE_HTML      => 'HTML/banner propio',
@@ -55,6 +58,10 @@ final class AdsAdminPage implements RegistersAdminPages {
 		private readonly CampaignHistoryRepository $history,
 		private readonly Config $config
 	) {
+	}
+
+	public static function typeLabel( string $type ): string {
+		return self::TYPES[ $type ] ?? $type;
 	}
 
 	/**
@@ -677,24 +684,53 @@ final class AdsAdminPage implements RegistersAdminPages {
 			return;
 		}
 
-		echo '<h3>' . esc_html__( 'Archivos subidos', 'dnorte-core' ) . '</h3><ul>';
+		echo '<h3>' . esc_html__( 'Archivos subidos', 'dnorte-core' ) . '</h3>';
 
 		foreach ( $campaign->evidenceIds as $attachmentId ) {
-			$url = wp_get_attachment_url( $attachmentId );
+			$this->renderEvidenceThumbnail( $attachmentId );
+		}
+	}
 
-			if ( $url === false ) {
-				continue;
+	/**
+	 * Miniatura si el adjunto es una imagen (caso normal: captura de pantalla
+	 * o foto del anuncio corriendo), enlace de texto si no (ej. un PDF de
+	 * contrato con el anunciante) — mismo criterio que
+	 * CampaignReportPdfRenderer::evidenceItemHtml() usa para el PDF, para que
+	 * la vista en pantalla y el PDF descargado muestren lo mismo.
+	 */
+	private function renderEvidenceThumbnail( int $attachmentId ): void {
+		if ( wp_attachment_is_image( $attachmentId ) ) {
+			$imageUrl = wp_get_attachment_image_url( $attachmentId, 'large' );
+
+			if ( is_string( $imageUrl ) && $imageUrl !== '' ) {
+				printf(
+					'<p><a href="%1$s" target="_blank"><img src="%1$s" alt="%2$s" style="max-width:100%%;height:auto;max-height:320px;border:1px solid #dcdcde;" /></a></p>',
+					esc_url( $imageUrl ),
+					esc_attr( get_the_title( $attachmentId ) )
+				);
+
+				return;
 			}
-
-			$title = get_the_title( $attachmentId );
-			printf(
-				'<li><a href="%s" target="_blank">%s</a></li>',
-				esc_url( $url ),
-				esc_html( $title !== '' ? $title : $url )
-			);
 		}
 
-		echo '</ul>';
+		$url = wp_get_attachment_url( $attachmentId );
+
+		if ( $url === false ) {
+			return;
+		}
+
+		$title = get_the_title( $attachmentId );
+		printf( '<p><a href="%s" target="_blank">%s</a></p>', esc_url( $url ), esc_html( $title !== '' ? $title : $url ) );
+	}
+
+	private function reportPdfUrl( int $campaignId ): string {
+		return add_query_arg(
+			array(
+				'page' => 'dnorte-publicidad',
+				'pdf'  => $campaignId,
+			),
+			admin_url( 'admin.php' )
+		);
 	}
 
 	private function renderReportView( int $campaignId ): void {
@@ -703,7 +739,8 @@ final class AdsAdminPage implements RegistersAdminPages {
 
 		echo '<div class="dnorte-ad-report">';
 		echo '<p class="dnorte-ad-report__back"><a href="' . esc_url( $backUrl ) . '">&larr; ' . esc_html__( 'Volver a campañas', 'dnorte-core' ) . '</a>';
-		echo ' &middot; <a href="#" onclick="window.print();return false;">' . esc_html__( 'Imprimir / Guardar como PDF', 'dnorte-core' ) . '</a></p>';
+		echo ' &middot; <a href="#" onclick="window.print();return false;">' . esc_html__( 'Imprimir', 'dnorte-core' ) . '</a>';
+		echo ' &middot; <a href="' . esc_url( $this->reportPdfUrl( $campaignId ) ) . '">' . esc_html__( 'Descargar PDF', 'dnorte-core' ) . '</a></p>';
 
 		if ( $campaign === null ) {
 			echo '<p>' . esc_html__( 'Campaña no encontrada.', 'dnorte-core' ) . '</p>';
@@ -730,19 +767,11 @@ final class AdsAdminPage implements RegistersAdminPages {
 		echo '</tbody></table>';
 
 		if ( $campaign->evidenceIds !== array() ) {
-			echo '<h2>' . esc_html__( 'Evidencia', 'dnorte-core' ) . '</h2><ul>';
+			echo '<h2>' . esc_html__( 'Evidencia', 'dnorte-core' ) . '</h2>';
 
 			foreach ( $campaign->evidenceIds as $attachmentId ) {
-				$url = wp_get_attachment_url( $attachmentId );
-
-				if ( $url === false ) {
-					continue;
-				}
-
-				printf( '<li><a href="%s" target="_blank">%s</a></li>', esc_url( $url ), esc_html( $url ) );
+				$this->renderEvidenceThumbnail( $attachmentId );
 			}
-
-			echo '</ul>';
 		}
 
 		printf(

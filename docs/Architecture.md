@@ -566,6 +566,82 @@ Ampliación pedida a partir de la lista real de tipos del cliente
   plataforma (Turnos/Analítica no necesitan ninguno) — deliberadamente
   vainilla, sin jQuery ni ninguna dependencia nueva.
 
+### PDF real del informe, con logo y evidencia embebidos (v0.1.0-alpha.16)
+
+"Generar informe" tenía, desde `v0.1.0-alpha.14`, una vista imprimible vía
+`window.print()` del navegador (sin generación en servidor, documentado como
+simplificación deliberada). El cliente pidió explícitamente un PDF real
+descargable, con el logo de Diario del Norte y la foto de evidencia
+incrustada (no solo enlazada) — esta versión lo reemplaza:
+
+- **`dompdf/dompdf` (^3.1)**: primera dependencia de producción real de toda
+  la plataforma (hasta ahora `dnorte-core/composer.json`'s `require` solo
+  pedía PHP). Elegido sobre mPDF/TCPDF/wkhtmltopdf por ser PHP puro sin
+  binario de sistema — el único tipo de opción viable en hosting compartido
+  de WordPress.
+- **`Ads\CampaignReportPdfRenderer`**: arma un HTML propio (mismo contenido
+  que `AdsAdminPage::renderReportView()`, pero standalone: sin el chrome de
+  wp-admin) y lo convierte a bytes de PDF vía dompdf. El logo
+  (`dnorte-core/assets/images/dnorte-logo.png`, bundleado con el plugin) y
+  cada foto de evidencia se embeben como `data:` URI en base64 directamente
+  en el HTML — dompdf corre en el servidor sin sesión de navegador ni
+  cookies, así que una `<img src="https://...">` normal le obligaría a
+  volver a descargar cada imagen por HTTP; por eso también
+  `Options::setIsRemoteEnabled(false)`, para que cualquier URL remota que se
+  colara se ignore en vez de intentar descargarse. La evidencia usa la
+  variante "large" (máx. 1024px) generada por WordPress al subir la imagen,
+  no el archivo original — una foto de evidencia subida desde un móvil (varios
+  MB) no gana nada visualmente a este tamaño de impresión y solo infla el PDF.
+  Evidencia que no es imagen (ej. un PDF de contrato) cae a un enlace de
+  texto, igual que en la vista en pantalla.
+- **Descarga vía `admin_init`, no dentro de `AdsAdminPage::render()`**: para
+  cuando `render()` corre, WordPress ya empezó a imprimir el HTML del panel
+  — enviar cabeceras `Content-Type: application/pdf` en ese punto ya es
+  tarde. `AdsServiceProvider::maybeDownloadReportPdf()` engancha
+  `admin_init` (corre antes de cualquier salida de la página), detecta
+  `?page=dnorte-publicidad&pdf={id}`, verifica `manage_options`, genera el
+  PDF y termina la petición con `header()` + `echo` + `exit`.
+- **`AdsAdminPage::TYPES` pasó de `private` a `public const`** (con un nuevo
+  helper estático `AdsAdminPage::typeLabel()`) para que
+  `AdsServiceProvider::maybeDownloadReportPdf()` arme la etiqueta del tipo de
+  campaña sin duplicar el mapa.
+- **Vista en pantalla también actualizada**: tanto "Generar informe" como
+  "Subir evidencia" ahora muestran la foto de evidencia como miniatura
+  embebida (`AdsAdminPage::renderEvidenceThumbnail()`), no solo como enlace de
+  texto — mismo criterio que usa el PDF, para que pantalla y PDF descargado
+  coincidan.
+- **Empaquetado**: `tools/build/package.sh` ahora corre
+  `composer install --no-dev --optimize-autoloader` dentro de la copia en
+  stage antes de zipear `dnorte-core` (primera vez que el zip del plugin
+  necesita un `vendor/` — antes no hacía falta ningún paso de Composer).
+  `composer.json`/`.lock` se copian al stage solo para esa instalación y se
+  borran después; el zip final nunca los incluye.
+- **Sin test unitario**: todo lo que hace `CampaignReportPdfRenderer` (leer un
+  adjunto real de la Biblioteca de medios, generar bytes de PDF con una
+  librería real) requiere WordPress y un archivo real en disco — se prueba a
+  nivel de integración (`tests/Integration/Ads/CampaignReportPdfRendererTest.php`,
+  que solo comprueba la firma `%PDF-` y el tamaño de los bytes devueltos, no
+  el contenido visual — eso se verificó a mano en el navegador durante esta
+  misma versión).
+- **`tools/wp-tests/phpunit9/composer.json` ganó un mapa de autoload manual
+  para dompdf y su árbol de dependencias** (`Dompdf\`, `FontLib\`, `Svg\`,
+  `Masterminds\`, `Sabberworm\CSS\`, más el classmap/files de
+  `thecodingmachine/safe`), apuntando directo a rutas dentro de
+  `dnorte-core/vendor/` — el mismo patrón ya usado para `DNorteCore\`/
+  `DNorteTheme\`. Motivo: este arnés de PHPUnit 9 nunca carga el
+  `vendor/autoload.php` completo de ningún paquete (arrastraría el
+  `phpunit/phpunit` ^10.5 de `require-dev` de ese paquete y su archivo global
+  `Functions.php` con `assertEquals()`/`assertTrue()`/etc., que chocaría con
+  las funciones globales que ya declara este PHPUnit 9) — así que cualquier
+  dependencia de producción nueva que un paquete necesite en sus pruebas de
+  integración debe mapearse aquí a mano, igual que se hizo con dompdf. El
+  orden del array `files` importa: `thecodingmachine/safe` (define las
+  funciones `Safe\*`) debe listarse antes que `sabberworm/php-css-parser`
+  (las llama al cargar `Rule.php`, no dentro de una función) — invertirlo
+  revienta con `Call to undefined function Safe\class_alias()`. Tras editar
+  ese archivo hay que correr `composer dump-autoload` dentro de
+  `tools/wp-tests/phpunit9/`.
+
 ## `Admin\AdminPage::$parentSlug` — ver "Menú de administración"
 
 Con tres módulos de administración ya registrados (Turnos, Analítica,

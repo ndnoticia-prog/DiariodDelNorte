@@ -2,6 +2,41 @@
 
 Formato basado en [Keep a Changelog](https://keepachangelog.com/es-ES/1.0.0/).
 
+## [Unreleased] — v0.1.0-alpha.16
+
+### Added
+
+- `dnorte-core`: "Generar informe" ahora genera un PDF real y descargable
+  (`?page=dnorte-publicidad&pdf={id}`), con el logo de Diario del Norte y la
+  foto de evidencia embebidos en el propio archivo (no solo enlazados) —
+  pedido explícito del cliente tras ver la vista imprimible de
+  `v0.1.0-alpha.14`. Usa `dompdf/dompdf` (^3.1), primera dependencia de
+  producción real de toda la plataforma. Ver `Ads\CampaignReportPdfRenderer`.
+
+### Changed
+
+- `dnorte-core`: la vista en pantalla de "Generar informe" y "Subir
+  evidencia" ahora muestra la foto de evidencia como miniatura embebida, no
+  solo como enlace de texto — mismo criterio que el PDF descargado.
+- `tools/build/package.sh`: el zip de `dnorte-core` ahora incluye un
+  `vendor/` de producción (`composer install --no-dev`) y la carpeta
+  `assets/` — primera vez que el plugin necesita un paso de Composer para
+  empaquetarse.
+
+### Verified
+
+- `composer run check` (0 errores PHPCS, 0 errores PHPStan nivel máximo, 130
+  pruebas unitarias) y `composer test:integration` (79 pruebas, incluida
+  `CampaignReportPdfRendererTest`) en verde.
+- `tools/build/package.sh dnorte-core` genera un zip válido con `vendor/`
+  (solo dependencias de producción — sin PHPUnit/Mockery/PHPStan/WPCS) y el
+  logo bundleado.
+- WordPress real de desarrollo: PDF descargado para una campaña real con
+  evidencia real adjunta — logo de Diario del Norte y foto de evidencia
+  correctamente embebidos y visibles en el archivo, cabeceras
+  `Content-Type: application/pdf`/`Content-Disposition: attachment`
+  correctas; `debug.log` vacío en todo el recorrido.
+
 ## [Unreleased] — v0.1.0-alpha.15
 
 ### Added

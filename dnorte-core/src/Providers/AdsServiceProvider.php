@@ -26,6 +26,7 @@ use DNorteCore\Ads\AdSlotRenderer;
 use DNorteCore\Ads\AdsAdminPage;
 use DNorteCore\Ads\Campaign;
 use DNorteCore\Ads\CampaignEventController;
+use DNorteCore\Ads\CampaignReportPdfRenderer;
 use DNorteCore\Ads\CampaignRepository;
 use DNorteCore\Ads\ContentParagraphInjector;
 use DNorteCore\Config\Config;
@@ -43,6 +44,7 @@ final class AdsServiceProvider extends ServiceProvider {
 		$hooks->addAction( 'wp_enqueue_scripts', $this->enqueueAdSenseLoader( ... ), 10 );
 		$hooks->addAction( 'wp_enqueue_scripts', $this->enqueueGamLoader( ... ), 10 );
 		$hooks->addAction( 'wp_footer', $this->renderTrackingScript( ... ), 20 );
+		$hooks->addAction( 'admin_init', $this->maybeDownloadReportPdf( ... ), 10 );
 		$hooks->addFilter( 'the_content', $this->injectArticleAds( ... ), 20, 1 );
 		$hooks->addFilter( 'dnorte_core/admin_pages', $this->addAdminPages( ... ), 10, 1 );
 		$hooks->addFilter( 'dnorte_core/rest_controllers', $this->addRestControllers( ... ), 10, 1 );
@@ -168,6 +170,57 @@ final class AdsServiceProvider extends ServiceProvider {
 			wp_json_encode( $impressionUrl ), // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- ya son URLs propias escapadas por esc_url_raw()+wp_json_encode(); contexto JS, no HTML.
 			wp_json_encode( $clickUrl )
 		);
+	}
+
+	/**
+	 * Descarga del PDF de "Generar informe" (AdsAdminPage::reportPdfUrl()).
+	 * Enganchado a `admin_init` (no dentro de AdsAdminPage::render()) porque
+	 * WordPress ya empezó a imprimir el HTML del panel de administración para
+	 * cuando ese render() corre — enviar cabeceras `Content-Type: application/
+	 * pdf` en ese punto ya es tarde. `admin_init` corre antes de cualquier
+	 * salida de la página, así que puede interceptar la petición, generar el
+	 * PDF y terminar la petición ahí mismo con `exit`.
+	 */
+	public function maybeDownloadReportPdf(): void {
+		// phpcs:ignore WordPress.Security.NonceVerification.Recommended -- solo lee (genera un PDF a partir de datos ya guardados), no escribe nada; protegido por manage_options más abajo.
+		if ( ! isset( $_GET['page'], $_GET['pdf'] ) || sanitize_key( wp_unslash( $_GET['page'] ) ) !== 'dnorte-publicidad' ) {
+			return;
+		}
+
+		if ( ! current_user_can( 'manage_options' ) ) {
+			wp_die( esc_html__( 'No tienes permiso para descargar este informe.', 'dnorte-core' ) );
+		}
+
+		// phpcs:ignore WordPress.Security.NonceVerification.Recommended -- ver el ignore de arriba.
+		$id = absint( wp_unslash( $_GET['pdf'] ) );
+
+		/** @var CampaignRepository $repository */
+		$repository = $this->container->get( CampaignRepository::class );
+		$campaign   = $repository->find( $id );
+
+		if ( $campaign === null ) {
+			wp_die( esc_html__( 'Campaña no encontrada.', 'dnorte-core' ) );
+		}
+
+		/** @var Config $config */
+		$config = $this->container->get( Config::class );
+		/** @var array<string, string> $slots */
+		$slots     = $config->get( 'ads.slots', array() );
+		$zoneNames = array_map( static fn ( string $z ): string => $slots[ $z ] ?? $z, $campaign->zones );
+
+		$pdf = ( new CampaignReportPdfRenderer() )->render(
+			$campaign,
+			$zoneNames,
+			AdsAdminPage::typeLabel( $campaign->type ),
+			$campaign->enabled ? __( 'Activa', 'dnorte-core' ) : __( 'Inactiva', 'dnorte-core' )
+		);
+
+		nocache_headers();
+		header( 'Content-Type: application/pdf' );
+		header( 'Content-Disposition: attachment; filename="informe-' . sanitize_title( $campaign->name ) . '.pdf"' );
+		header( 'Content-Length: ' . strlen( $pdf ) );
+		echo $pdf; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- bytes binarios de un PDF, no marcado HTML.
+		exit;
 	}
 
 	/**

@@ -3,7 +3,7 @@
  * Plugin Name:       DNorte Core
  * Plugin URI:        https://diariodelnorte.net/
  * Description:       Núcleo de la plataforma editorial de Diario del Norte: contenedor DI, configuración, hooks, eventos y orquestación de módulos. Requiere activar dnorte-theme para el front-end.
- * Version:           0.1.0-alpha.15
+ * Version:           0.1.0-alpha.16
  * Requires at least: 6.4
  * Requires PHP:      8.1
  * Author:            Diario del Norte
@@ -20,7 +20,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit; // Sin acceso directo.
 }
 
-define( 'DNORTE_CORE_VERSION', '0.1.0-alpha.15' );
+define( 'DNORTE_CORE_VERSION', '0.1.0-alpha.16' );
 define( 'DNORTE_CORE_FILE', __FILE__ );
 define( 'DNORTE_CORE_DIR', __DIR__ );
 

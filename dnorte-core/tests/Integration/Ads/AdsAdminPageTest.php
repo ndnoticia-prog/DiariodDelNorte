@@ -8,6 +8,7 @@ declare(strict_types=1);
 namespace DNorteCore\Tests\Integration\Ads;
 
 use DNorteCore\Ads\AdsAdminPage;
+use DNorteCore\Ads\Campaign;
 use DNorteCore\Ads\CampaignHistoryRepository;
 use DNorteCore\Ads\CampaignRepository;
 use DNorteCore\Config\Config;
@@ -34,5 +35,14 @@ final class AdsAdminPageTest extends WP_UnitTestCase {
 		// superior, nunca anidada bajo otro módulo.
 		self::assertNull( $pages[0]->parentSlug );
 		self::assertIsCallable( $pages[0]->render );
+	}
+
+	/**
+	 * Providers\AdsServiceProvider::maybeDownloadReportPdf() usa este helper
+	 * público para armar el PDF sin duplicar el mapa TYPES.
+	 */
+	public function test_type_label_resolves_a_known_type_and_falls_back_to_the_raw_value(): void {
+		self::assertSame( 'Google Ad Manager', AdsAdminPage::typeLabel( Campaign::TYPE_GAM ) );
+		self::assertSame( 'inexistente', AdsAdminPage::typeLabel( 'inexistente' ) );
 	}
 }

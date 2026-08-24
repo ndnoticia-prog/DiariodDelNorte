@@ -506,12 +506,42 @@ video/sponsored).
       campaña de contenido patrocinado real verificada visualmente, `debug.log`
       vacío en todo el recorrido.
 
+## v0.1.0-alpha.16 — Publicidad propia: PDF real del informe, con logo y evidencia embebidos
+
+Pedido explícito del cliente tras ver la vista imprimible de alpha.14/15: un
+PDF real descargable, con el logo de Diario del Norte y la foto de evidencia
+incrustada (no solo enlazada), en vez de depender del "Imprimir → Guardar
+como PDF" del navegador.
+
+- [x] `dompdf/dompdf` (^3.1) — primera dependencia de producción real de toda
+      la plataforma. Logo (`dnorte-core/assets/images/dnorte-logo.png`,
+      bundleado con el plugin) y foto de evidencia embebidos como `data:` URI
+      en base64 (`Ads\CampaignReportPdfRenderer`).
+- [x] Descarga vía `?page=dnorte-publicidad&pdf={id}`, enganchada a
+      `admin_init` (`AdsServiceProvider::maybeDownloadReportPdf()`) — la única
+      forma de enviar cabeceras binarias antes de que WordPress empiece a
+      imprimir el HTML del panel.
+- [x] Vista en pantalla de "Generar informe" y "Subir evidencia" también
+      actualizada: la foto de evidencia se muestra como miniatura embebida,
+      no solo como enlace de texto.
+- [x] `tools/build/package.sh` empaqueta ahora un `vendor/` de producción
+      (`composer install --no-dev`) dentro del zip de `dnorte-core` — primera
+      vez que el plugin lo necesita.
+- [x] 3 pruebas unitarias nuevas (130 en total) y 4 de integración nuevas (79
+      en total). `composer run check` y `composer test:integration` en verde.
+- [x] Verificado en el WordPress real de desarrollo: PDF descargado para una
+      campaña real con evidencia real adjunta, logo y foto correctamente
+      embebidos y visibles en el archivo; zip empaquetado inspeccionado
+      (`vendor/` de solo producción, sin PHPUnit/Mockery/PHPStan/WPCS);
+      `debug.log` vacío en todo el recorrido.
+
 ## Próximas versiones (por decidir)
 
 Alcance técnico restante, confirmado explícitamente por el cliente: IA — con la
 misma pregunta previa de si un plugin ya probado o una función nativa de
 WordPress lo resuelve sin construir nada nuevo (ver `docs/handoff-nd-platform.md`
 §8). El workflow editorial, el panel de turnos, la búsqueda interna, la
-analítica propia y la publicidad propia ya se cerraron (alpha.9–alpha.15). En lo
+analítica propia y la publicidad propia ya se cerraron (alpha.9–alpha.16). En lo
 estético: guía de marca real de Diario del Norte (sustituir el color de acento
-placeholder), y posible logo/isotipo en vez de branding solo textual.
+placeholder) — el logo real ya se incorporó al PDF del informe en alpha.16, pero
+todavía no al front-end del sitio ni al panel de administración.
