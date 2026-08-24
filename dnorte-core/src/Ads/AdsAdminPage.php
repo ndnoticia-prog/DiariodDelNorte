@@ -133,6 +133,7 @@ final class AdsAdminPage implements RegistersAdminPages {
 			.dnorte-ad-status--inactive { background: #f6f7f7; color: #646970; }
 			@media print {
 				#adminmenumain, #wpadminbar, #wpfooter, .wrap > h1, .wrap > .notice, .dnorte-ad-report__back { display: none !important; }
+				#wpbody-content > .notice, #wpbody-content > .update-nag { display: none !important; }
 				#wpcontent, #wpbody-content { margin: 0 !important; padding: 0 !important; }
 			}
 		</style>';
